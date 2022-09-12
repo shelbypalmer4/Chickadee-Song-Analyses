@@ -677,7 +677,3 @@ ggbiplot(pcaBCCH2,
 
 ggplot(SparrowfootDF, aes(x=note_number)) + 
   geom_histogram(binwidth=1)
-
-par(mfrow=c(2,1))
-plot(2, 13)
-plot(3, 13)
