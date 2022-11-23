@@ -69,41 +69,49 @@ MaxFreq<-function(x) {
   max(meanspec(x, 
                flim=c(0,10), 
                wl=512, 
-               dB='max0')[,1][meanspec(x, 
-                                       flim=c(0,10), 
-                                       wl = 512, 
-                                       dB='max0')[,2]>crit])
+               dB='max0',
+               plot=F)[,1][meanspec(x, 
+                                    flim=c(0,10), 
+                                    wl = 512, 
+                                    dB='max0',
+                                    plot=F)[,2]>crit])
 }
 
 MinFreq<-function(x) {
   min(meanspec(x, 
                flim=c(0,10), 
                wl=512, 
-               dB='max0')[,1][meanspec(x, 
-                                       flim=c(0,10), 
-                                       wl = 512, 
-                                       dB='max0')[,2]>crit])
+               dB='max0',
+               plot=F)[,1][meanspec(x, 
+                                    flim=c(0,10), 
+                                    wl = 512, 
+                                    dB='max0',
+                                    plot=F)[,2]>crit])
 }
 
 MeanFreq<-function(x) {
   mean(meanspec(x, 
                flim=c(0,10), 
                wl=512, 
-               dB='max0')[,1][meanspec(x, 
-                                       flim=c(0,10), 
-                                       wl = 512, 
-                                       dB='max0')[,2]>crit])
+               dB='max0',
+               plot=F)[,1][meanspec(x, 
+                                    flim=c(0,10), 
+                                    wl = 512, 
+                                    dB='max0',
+                                    plot=F)[,2]>crit])
 }
 
 PeakFreq<-function(x) {
 meanspec(x, 
          flim=c(0,10), 
          wl = 512, 
-         dB='max0')[,1][match(c(0),
+         dB='max0',
+         plot=F)[,1][match(c(0),
                               meanspec(x, 
                                        flim=c(0,10), 
                                        wl = 512, 
-                                       dB='max0')[,2])]
+                                       dB='max0',
+                                       plot=F)[,2])]
 }
 
 AbsPFmaxslope<-function(x) {
