@@ -61,10 +61,10 @@ aFourthnote<-cutw(a1,
                   plot=F)
 
 #### MEASUREMENT EXTRACTION FUNCTIONS ####
-# making functions that extract frequency measurements from the mean frequency spectrum
 
 crit = -24 # critical amplitude value when we use dB='max0'
 
+# Overall Frequency Measurements--using the mean frequency spectrum
 MaxFreq<-function(x) {
   max(meanspec(x, 
                flim=c(0,10), 
@@ -114,6 +114,23 @@ meanspec(x,
                                        plot=F)[,2])]
 }
 
+# Dominant Frequency Measurements--using dfreq()
+MaxDFreq<-function(x) {
+  max(dfreq(x, plot = F)[,2])
+}
+
+MinDFreq<-function(x) {
+  min(dfreq(d, plot = F)[,2])
+}
+
+MeanDFreq<-function(x) {
+  mean(dfreq(d, plot = F)[,2])
+}
+
+MedianDFreq<-function(x) {
+  median(dfreq(d, plot = F)[,2])
+}
+
 AbsPFmaxslope<-function(x) {
   max(abs(diff(dfreq(x, 
                      ovlp=95, 
@@ -122,6 +139,7 @@ AbsPFmaxslope<-function(x) {
 }
 
 #### Dataframe for just the first recording ####
+
 firstDF<-data.frame(note_num=seq(1:length(aNotes$s.start)), 
                        file_name=rep("Poecile.sp_Gm.GO_Apr032022_SparrowfootPUA.HenryCO.MO_SMP_a_0.08.wav"))
 
@@ -148,6 +166,27 @@ for (i in 1:length(aNotes$s.start)) {
                                          to=aNotes$s.end[i],
                                          output="Wave",
                                          plot=F))
+  firstDF$Max_Dom_Freq[i]<-MaxDFreq(cutw(a1,
+                                    from=aNotes$s.start[i],
+                                    to=aNotes$s.end[i],
+                                    output="Wave",
+                                    plot=F))
+  firstDF$Min_Dom_Freq[i]<-MinDFreq(cutw(a1,
+                                         from=aNotes$s.start[i],
+                                         to=aNotes$s.end[i],
+                                         output="Wave",
+                                         plot=F))
+  firstDF$Mean_Dom_Freq[i]<-MeanDFreq(cutw(a1,
+                                         from=aNotes$s.start[i],
+                                         to=aNotes$s.end[i],
+                                         output="Wave",
+                                         plot=F))
+  firstDF$Median_Dom_Freq[i]<-MedianDFreq(cutw(a1,
+                                         from=aNotes$s.start[i],
+                                         to=aNotes$s.end[i],
+                                         output="Wave",
+                                         plot=F))
+  firstDF$Dom_Freq_Range[i]<-firstDF$Max_Dom_Freq[i]-firstDF$Min_Dom_Freq[i]
   firstDF$Abs_Max_PF_Slope[i]<-AbsPFmaxslope(cutw(a1,
                                                   from=aNotes$s.start[i],
                                                   to=aNotes$s.end[i],
@@ -201,6 +240,27 @@ for (i in 2:length(list.files())) {
                                   to=aNotes$s.end[i],
                                   output="Wave",
                                   plot=F))
+    b$Max_Dom_Freq[i]<-MaxDFreq(cutw(a1,
+                                     from=aNotes$s.start[i],
+                                     to=aNotes$s.end[i],
+                                     output="Wave",
+                                     plot=F))
+    b$Min_Dom_Freq[i]<-MinDFreq(cutw(a1,
+                                     from=aNotes$s.start[i],
+                                     to=aNotes$s.end[i],
+                                     output="Wave",
+                                     plot=F))
+    b$Mean_Dom_Freq[i]<-MeanDFreq(cutw(a1,
+                                       from=aNotes$s.start[i],
+                                       to=aNotes$s.end[i],
+                                       output="Wave",
+                                       plot=F))
+    b$Median_Dom_Freq[i]<-MedianDFreq(cutw(a1,
+                                           from=aNotes$s.start[i],
+                                           to=aNotes$s.end[i],
+                                           output="Wave",
+                                           plot=F))
+    b$Dom_Freq_Range[i]<-b$Max_Dom_Freq[i]-b$Min_Dom_Freq[i]
     b$Abs_Max_PF_Slope[i]<-AbsPFmaxslope(cutw(a1,
                                               from=aNotes$s.start[i],
                                               to=aNotes$s.end[i],
