@@ -131,7 +131,7 @@ MedianDFreq<-function(x) {
   median(dfreq(d, plot = F)[,2])
 }
 
-AbsPFmaxslope<-function(x) {
+AbsDFreqMaxSlope<-function(x) {
   max(abs(diff(dfreq(x, 
                      ovlp=95, 
                      threshold=5, 
@@ -187,7 +187,7 @@ for (i in 1:length(aNotes$s.start)) {
                                          output="Wave",
                                          plot=F))
   firstDF$Dom_Freq_Range[i]<-firstDF$Max_Dom_Freq[i]-firstDF$Min_Dom_Freq[i]
-  firstDF$Abs_Max_PF_Slope[i]<-AbsPFmaxslope(cutw(a1,
+  firstDF$Abs_DF_Max_Slope[i]<-AbsDFreqMaxSlope(cutw(a1,
                                                   from=aNotes$s.start[i],
                                                   to=aNotes$s.end[i],
                                                   output="Wave",
@@ -261,7 +261,7 @@ for (i in 2:length(list.files())) {
                                            output="Wave",
                                            plot=F))
     b$Dom_Freq_Range[i]<-b$Max_Dom_Freq[i]-b$Min_Dom_Freq[i]
-    b$Abs_Max_PF_Slope[i]<-AbsPFmaxslope(cutw(a1,
+    b$Abs_DF_Max_Slope[i]<-AbsDFreqMaxSlope(cutw(a1,
                                               from=aNotes$s.start[i],
                                               to=aNotes$s.end[i],
                                               output="Wave",
