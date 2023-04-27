@@ -345,3 +345,4 @@ secondenv<-env(aSecondnote, msmooth=c(512,90), norm=T)
 thirdenv<-env(aThirdnote, msmooth=c(512,90), norm=T)
 fourthenv<-env(aFourthnote, msmooth=c(512,90), norm=T)
 
+questionfour<-c(rep("other", 4), rep("0.01075", 4), rep("3.41e-6", 7), rep("0.172", 13), "0.162")
