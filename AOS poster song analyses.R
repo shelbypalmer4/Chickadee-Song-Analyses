@@ -107,7 +107,7 @@ cutspec<-function(x) {
   png(filename = paste("cut_spec/", x, ".png", sep = ""))
   spectro(e, 
           wl = 512, 
-          ovlp = 95, 
+          ovlp = 95,
           collevels = seq(-42,0,6),
           flim = c(0, 10),
           osc = F, 
