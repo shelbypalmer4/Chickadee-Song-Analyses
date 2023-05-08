@@ -3,9 +3,11 @@
 library(tuneR)
 library(seewave)
 
-setwd("C:/Users/Shelby Palmer/Desktop/The House Always Wins/Chickadee-Song-Analyses")
+# setwd("C:/Users/Shelby Palmer/Desktop/The House Always Wins/Chickadee-Song-Analyses")
+setwd("/Users/shelbypalmer/Documents/GitHub/Chickadee-Song-Analyses")
 HZCH_QC <- read.csv("SPPUA_Hz_Quality-and-exceptions.csv")
-setwd("C:/Users/Shelby Palmer/Desktop/The House Always Wins/Chickadee-Song-Analyses/AllSongsSPPUA")
+# setwd("C:/Users/Shelby Palmer/Desktop/The House Always Wins/Chickadee-Song-Analyses/AllSongsSPPUA")
+setwd("/Users/shelbypalmer/Documents/GitHub/Chickadee-Song-Analyses/AllSongsSPPUA")
 
 # first things first: remove all the unusable recordings
 garbage <- HZCH_QC$file_names[HZCH_QC$include=="N"]
@@ -34,8 +36,6 @@ timertest <- timer(test,
 #   return(z)
 # }
 
-HZCH <- list(file_name = list.files()[1],
-             Max_Freq <- MaxDFreq2(test,timertest))
 
 # Okay, I think it works. Now to re-work the rest of the measurement extraction functions...
 
@@ -150,6 +150,8 @@ HZCH$sd_freq <- StdevDFreq2(song,notes)
 HZCH$abs_max_slope <- AbsDFreqMaxSlope2(song,notes)
 HZCH$duration <- notes$s
 
+View(HZCH)
+
 # this worked; now just need to put this in a loop that will go iteratively over each recording and bind together...
 for (i in 2:length(recordings)) {
   song <- readWave(recordings[i])
@@ -209,6 +211,28 @@ for (i in 2:length(recordings)) {
 #   return(z)
 # }
 
-# messing with the minimum frequency function to exclude measurement of noise
+setwd("/Users/shelbypalmer/Documents/GitHub/Chickadee-Song-Analyses")
+write.csv(HZCH, "HZCH_note-level-measurements_1.csv")
+
+# let's see what dfreq is doing with the recordings with minimum frequency measurements < 3
+toolow <- unique(HZCH$file_name[which(HZCH$min_freq<3)])
+toolowQC <- HZCH_QC_Y[which(HZCH_QC_Y$file_names %in% toolow),]
+setwd("/Users/shelbypalmer/Documents/GitHub/Chickadee-Song-Analyses")
+write.csv(toolowQC, "HZCH_QC_minfreq.csv")
+
+setwd("/Users/shelbypalmer/Documents/GitHub/Chickadee-Song-Analyses/AllSongsSPPUA")
+for (i in 1:length(toolow)) {
+  a <- readWave(toolow[i])
+  dfreq(a,
+        wl = 1024,
+        ovlp = 95)
+  par(new = T)
+  try(timer(a,
+        dmin = 0.05, 
+        envt = "hil", 
+        msmooth = c(512, 90), 
+        threshold = toolowQC$threshold[i],
+        main = toolow[i]))
+}
 
 
