@@ -431,6 +431,8 @@ which(HZCH$file_name %in% weird$file_name)
 HZCH <- HZCH[-which(HZCH$file_name %in% weird$file_name),]
 HZCH <- rbind(HZCH, weird)
 HZCH <- HZCH[-which(HZCH$file_name %in% allweirdQC$file_names[which(allweirdQC$include == "N")]),]
+setwd("/Users/shelbypalmer/Documents/GitHub/Chickadee-Song-Analyses")
+write.csv(HZCH, "HZCH_note-level-measurements_2.csv")
 
 
 hist(HZCH$min_freq)
