@@ -49,6 +49,25 @@ cutspec<-function(x) {
 }
 lapply(list.files(pattern = ".wav"), cutspec)
 
-
-library(ggplot2)
+# simply makes nice spectrograms for checks
+specR<-function(x) {
+  a<-readWave(x)
+  b<-fir(a, 
+         from = 2500, 
+         to = 10000, 
+         bandpass = TRUE,
+         output="Wave")
+  c<-normalize(b, unit = c("24"))
+  spectro(c, 
+          wl = 512, 
+          ovlp = 95, 
+          collevels = seq(-42,0,6),
+          flim = c(0, 10),
+          osc = F, 
+          scale = F, 
+          colgrid = "gray", 
+          cexlab = 0.8,
+          cexaxis = 0.7,
+          main = x)
+}
 

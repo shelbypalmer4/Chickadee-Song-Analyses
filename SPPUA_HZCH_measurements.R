@@ -131,7 +131,7 @@ AbsDFreqMaxSlope2<-function(x,y) {
 }
 
 
-
+#### NOTE-LEVEL MEASUREMENTS ####
 # first recording only...
 song <- readWave(recordings[1])
 notes <- timer(song,
@@ -214,7 +214,7 @@ for (i in 2:length(recordings)) {
 setwd("/Users/shelbypalmer/Documents/GitHub/Chickadee-Song-Analyses")
 write.csv(HZCH, "HZCH_note-level-measurements_1.csv")
 
-#### 8 May 2023 ####
+#### Checks: 8 May 2023 ####
 # let's see what dfreq is doing with the recordings with minimum frequency measurements < 3
 toolow <- unique(HZCH$file_name[which(HZCH$min_freq<3)])
 toolowQC <- HZCH_QC_Y[which(HZCH_QC_Y$file_names %in% toolow),]
@@ -302,7 +302,7 @@ for (i in 1:length(toolong)) {
             main = toolong[i]))
 }
 
-#### 9 May 2023 ####
+#### Checks: 9 May 2023 ####
 # read in the new quality check spreadsheets and replace threshold values with those in the min frequency one
 setwd("/Users/shelbypalmer/Documents/GitHub/Chickadee-Song-Analyses")
 HZCH_QC <- read.csv("SPPUA_Hz_Quality-and-exceptions_2.csv")
@@ -432,9 +432,30 @@ HZCH <- HZCH[-which(HZCH$file_name %in% weird$file_name),]
 HZCH <- rbind(HZCH, weird)
 HZCH <- HZCH[-which(HZCH$file_name %in% allweirdQC$file_names[which(allweirdQC$include == "N")]),]
 setwd("/Users/shelbypalmer/Documents/GitHub/Chickadee-Song-Analyses")
+# setwd("C:/Users/Shelby Palmer/Desktop/The House Always Wins/Chickadee-Song-Analyses")
 write.csv(HZCH, "HZCH_note-level-measurements_2.csv")
 
-
+# much better!!
 hist(HZCH$min_freq)
 hist(HZCH$duration)
 # check recordings with a minimum frequency above 7 kHz
+HZCH$file_name[(which(HZCH$min_freq>7))]
+
+setwd("C:/Users/Shelby Palmer/Desktop/The House Always Wins/Chickadee-Song-Analyses")
+HZCH <- read.csv("HZCH_note-level-measurements_2.csv")
+
+# confirming that all of the many-noted songs are ok (most are Mr. Orange)
+hist(HZCH$note_num)
+HZCH$file_name[which(HZCH$note_num>10)]
+setwd("C:/Users/Shelby Palmer/Desktop/The House Always Wins/Chickadee-Song-Analyses/AllSongsSPPUA")
+lapply(HZCH$file_name[which(HZCH$note_num>10)], specR)
+
+# they all look ok
+HZCH$file_name[which(HZCH$note_num==8)]
+HZCH$file_name[which(HZCH$note_num==9)]
+
+# removing a replicate recording
+HZCH <- HZCH[-which(HZCH$file_name=="Poecile.sp_Om.NO_Mar152022_SparrowfootPUA.HenryCO.MO_CKH_b_0.03.wav"),]
+
+#### SONG-LEVEL MEASUREMENTS ####
+
