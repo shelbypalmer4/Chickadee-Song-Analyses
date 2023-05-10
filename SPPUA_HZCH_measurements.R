@@ -458,4 +458,35 @@ HZCH$file_name[which(HZCH$note_num==9)]
 HZCH <- HZCH[-which(HZCH$file_name=="Poecile.sp_Om.NO_Mar152022_SparrowfootPUA.HenryCO.MO_CKH_b_0.03.wav"),]
 
 #### SONG-LEVEL MEASUREMENTS ####
+HZCH <- read.csv("HZCH_note-level-measurements_2.csv")
 
+HZsongs <- data.frame(file_name = unique(HZCH$file_name))
+setwd("/Users/shelbypalmer/Documents/GitHub/Chickadee-Song-Analyses/AllSongsSPPUA")
+for (i in 1:length(unique(HZCH$file_name))) {
+  song <- readWave(unique(HZCH$file_name)[i])
+  song <- fir(song,
+              from = 2500,
+              to = 10000,
+              bandpass = T,
+              output = "Wave")
+  if(!is.na(HZCH_QC_Y$trim_s[i])){
+    song <- cutw(song,
+                 from=HZCH_QC_Y$trim_s[i],
+                 to=HZCH_QC_Y$trim_f[i],
+                 output="Wave")
+  }
+  dur <- timer(song,
+               dmin=0.05, 
+               envt="hil", 
+               msmooth=c(512, 90), 
+               threshold=HZCH_QC_Y$threshold[i],
+               plot = F)
+  HZsongs$number_notes[i] <- length(which(HZCH$file_name==HZsongs$file_name[i]))
+  HZsongs$duration[i] <- dur$s.end[length(dur$s.end)]-dur$s.start[1]
+  HZsongs$max_note_dur[i] <- max(HZCH$duration[which(HZCH$file_name==HZsongs$file_name[i])])
+  HZsongs$min_note_dur[i] <- min(HZCH$duration[which(HZCH$file_name==HZsongs$file_name[i])])
+  HZsongs$mean_note_dur[i] <- mean(HZCH$duration[which(HZCH$file_name==HZsongs$file_name[i])])
+  HZsongs$stdev_note_dur[i] <- sd(HZCH$duration[which(HZCH$file_name==HZsongs$file_name[i])])
+  HZsongs$signal_pause_ratio[i] <- dur$r
+  # Incomplete: add the rest of the measurements before running
+}
