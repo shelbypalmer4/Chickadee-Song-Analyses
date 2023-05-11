@@ -304,7 +304,8 @@ for (i in 1:length(toolong)) {
 
 #### Checks: 9 May 2023 ####
 # read in the new quality check spreadsheets and replace threshold values with those in the min frequency one
-setwd("/Users/shelbypalmer/Documents/GitHub/Chickadee-Song-Analyses")
+# setwd("/Users/shelbypalmer/Documents/GitHub/Chickadee-Song-Analyses")
+setwd("C:/Users/Shelby Palmer/Desktop/The House Always Wins/Chickadee-Song-Analyses")
 HZCH_QC <- read.csv("SPPUA_Hz_Quality-and-exceptions_2.csv")
 toolowQC <- read.csv("HZCH_QC_minfreq.csv")
 HZCH_QC$threshold <- replace(HZCH_QC$threshold, 
@@ -460,8 +461,15 @@ HZCH <- HZCH[-which(HZCH$file_name=="Poecile.sp_Om.NO_Mar152022_SparrowfootPUA.H
 #### SONG-LEVEL MEASUREMENTS ####
 HZCH <- read.csv("HZCH_note-level-measurements_2.csv")
 
+# re-order HZCH so it's in alphabetical order by file name
+HZCH <- HZCH[order(HZCH$file_name),]
+HZCH_QC_Y <- HZCH_QC_Y[order(HZCH_QC_Y$file_names),]
+
 HZsongs <- data.frame(file_name = unique(HZCH$file_name))
-setwd("/Users/shelbypalmer/Documents/GitHub/Chickadee-Song-Analyses/AllSongsSPPUA")
+
+# setwd("/Users/shelbypalmer/Documents/GitHub/Chickadee-Song-Analyses/AllSongsSPPUA")
+setwd("C:/Users/Shelby Palmer/Desktop/The House Always Wins/Chickadee-Song-Analyses/AllSongsSPPUA")
+
 for (i in 1:length(unique(HZCH$file_name))) {
   song <- readWave(unique(HZCH$file_name)[i])
   song <- fir(song,
@@ -481,6 +489,7 @@ for (i in 1:length(unique(HZCH$file_name))) {
                msmooth=c(512, 90), 
                threshold=HZCH_QC_Y$threshold[i],
                plot = F)
+  HZsongs$ind_ID[i] <- unlist(strsplit(HZsongs$file_name[i], split = "_"))[2]
   HZsongs$number_notes[i] <- length(which(HZCH$file_name==HZsongs$file_name[i]))
   HZsongs$duration[i] <- dur$s.end[length(dur$s.end)]-dur$s.start[1]
   HZsongs$max_note_dur[i] <- max(HZCH$duration[which(HZCH$file_name==HZsongs$file_name[i])])
@@ -488,5 +497,12 @@ for (i in 1:length(unique(HZCH$file_name))) {
   HZsongs$mean_note_dur[i] <- mean(HZCH$duration[which(HZCH$file_name==HZsongs$file_name[i])])
   HZsongs$stdev_note_dur[i] <- sd(HZCH$duration[which(HZCH$file_name==HZsongs$file_name[i])])
   HZsongs$signal_pause_ratio[i] <- dur$r
-  # Incomplete: add the rest of the measurements before running
+  HZsongs$max_freq[i] <- max(HZCH$max_freq[which(HZCH$file_name==HZsongs$file_name[i])])
+  HZsongs$min_freq[i] <- min(HZCH$min_freq[which(HZCH$file_name==HZsongs$file_name[i])])
+  HZsongs$stdev_note_max_freq[i] <- sd(HZCH$max_freq[which(HZCH$file_name==HZsongs$file_name[i])])
+  HZsongs$abs_max_slope[i] <- max(HZCH$abs_max_slope[which(HZCH$file_name==HZsongs$file_name[i])])
+  HZsongs$stdev_slope[i] <- sd(HZCH$abs_max_slope[which(HZCH$file_name==HZsongs$file_name[i])])
 }
+
+setwd("C:/Users/Shelby Palmer/Desktop/The House Always Wins/Chickadee-Song-Analyses")
+write.csv(HZsongs, "HZCH_song-level-measurements_1.csv")
