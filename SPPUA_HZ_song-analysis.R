@@ -1,6 +1,7 @@
 #### Quantifying the variation in song of chickadees with mixed ancastry ####
 
-setwd("C:/Users/Shelby Palmer/Desktop/The House Always Wins/Chickadee-Song-Analyses")
+# setwd("C:/Users/Shelby Palmer/Desktop/The House Always Wins/Chickadee-Song-Analyses")
+setwd("/Users/shelbypalmer/Documents/GitHub/Chickadee-Song-Analyses")
 allsongs <- read.csv("HZCH_song-level-measurements_1.csv")
 which(allsongs$number_notes>12)
 # let's go ahead and exclude the superlong songs from Mr. O
@@ -33,8 +34,8 @@ pca1$rotation
 pca1scores <- as.data.frame(pca1$x)
 
 # make a plot
-# library(devtools)
-# install_github("vqv/ggbiplot")
+library(devtools)
+install_github("vqv/ggbiplot")
 library(ggbiplot)
 ggbiplot(pca1, 
          groups = allsongs$nickname,
@@ -44,12 +45,31 @@ ggbiplot(pca1,
          varname.size = 3,
          varname.adjust = 1)
 
+## I want to make a biplot for this PCA, but with just some individuals' points. Let's separate by Q-score...
+# individuals with Q<0.9
+ggbiplot(pca1, 
+         groups = allsongs$nickname,
+         obs.scale = 1,
+         var.scale = 1,
+         alpha = ifelse(allsongs$nickname == c("Remy", "Houdini", "Doc Holliday", "Eliud", "Johnny Ringo"), 0.75, 0),
+         varname.size = 3,
+         varname.adjust = 1)
+# individuals with Q>0.9
+ggbiplot(pca1, 
+         groups = allsongs$nickname,
+         obs.scale = 1,
+         var.scale = 1,
+         alpha = ifelse(allsongs$nickname == c("Mr. Orange", "JAY-Z", "Kafka", "Pre", "Nick Dunne"), 0.75, 0),
+         varname.size = 3,
+         varname.adjust = 1)
+
 # Life is short; lets's make a note-level plot!!
 allnotes <- read.csv("HZCH_note-level-measurements_2.csv")
 for (i in 1:length(allnotes$file_name)) {
   allnotes$ind_ID[i] <- unlist(strsplit(allnotes$file_name[i],
                                         split = "_"))[2]
 }
+allnotes$nickname <- rep(NA)
 allnotes$nickname[which(allnotes$ind_ID=="Gm.GO")] <- "Eliud"
 allnotes$nickname[which(allnotes$ind_ID=="Gm.RB")] <- "Doc Holliday"
 allnotes$nickname[which(allnotes$ind_ID=="Nm.GR")] <- "JAY-Z"
@@ -73,6 +93,23 @@ ggbiplot(pca2,
          obs.scale = 1,
          var.scale = 1,
          alpha = 0.5,
+         varname.size = 3,
+         varname.adjust = 1)
+
+# individuals with Q<0.9
+ggbiplot(pca2, 
+         groups = allnotes$nickname,
+         obs.scale = 1,
+         var.scale = 1,
+         alpha = ifelse(allnotes$nickname == c("Remy", "Houdini", "Doc Holliday", "Eliud", "Johnny Ringo"), 0.75, 0),
+         varname.size = 3,
+         varname.adjust = 1)
+# individuals with Q>0.9
+ggbiplot(pca2, 
+         groups = allnotes$nickname,
+         obs.scale = 1,
+         var.scale = 1,
+         alpha = ifelse(allnotes$nickname == c("Mr. Orange", "JAY-Z", "Kafka", "Pre", "Nick Dunne"), 0.75, 0),
          varname.size = 3,
          varname.adjust = 1)
 

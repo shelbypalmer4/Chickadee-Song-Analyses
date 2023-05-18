@@ -226,7 +226,7 @@ cutspecfig<-function(x) {
           cexlab = 0.8,
           cexaxis = 0.7,
           axisX = F,
-          palette = reverse.gray.colors.1)
+          palette = reverse.gray.colors.2)
   par(new=T)
   try(timerfig(c, 
             dmin = 0.05,
