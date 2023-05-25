@@ -1,14 +1,16 @@
 #### Quantifying the variation in song of chickadees with mixed ancastry ####
 
-setwd("C:/Users/Shelby Palmer/Desktop/The House Always Wins/Chickadee-Song-Analyses")
-# setwd("/Users/shelbypalmer/Documents/GitHub/Chickadee-Song-Analyses")
-allsongs <- read.csv("HZCH_song-level-measurements_1.csv")
+# setwd("C:/Users/Shelby Palmer/Desktop/The House Always Wins/Chickadee-Song-Analyses")
+setwd("/Users/shelbypalmer/Documents/GitHub/Chickadee-Song-Analyses")
+allsongs <- read.csv("HZCH_song-level-measurements_2.csv")
 which(allsongs$number_notes>12)
 # let's go ahead and exclude the superlong songs from Mr. O
 allsongs <- allsongs[-which(allsongs$number_notes>12),]
-# also going to retroactively exclude a mis-measured noisy song from Nick
+# also going to retroactively exclude a few mis-measured songs
 allsongs <- allsongs[-which(allsongs$file_name=="Poecile.sp_Ym.NG_Mar192022_SparrowfootPUA.HenryCO.MO_SMP_e_0.59.wav"),]
-allnotes <- allnotes[-which(allnotes$file_name=="Poecile.sp_Ym.NG_Mar192022_SparrowfootPUA.HenryCO.MO_SMP_e_0.59.wav"),]
+allsongs <- allsongs[-which(allsongs$file_name=="Poecile.sp_Gm.RB_Mar042023_SparrowfootPUA.HenryCO.MO_SMP_c_0.55.wav"),]
+allsongs <- allsongs[-which(allsongs$file_name=="Poecile.sp_Gm.RB_Mar062023_SparrowfootPUA.HenryCO.MO_SMP_a_1.27.wav"),]
+
 
 allsongs$nickname <- rep(NA)
 allsongs$nickname[which(allsongs$ind_ID=="Gm.GO")] <- "Eliud"
@@ -25,7 +27,7 @@ allsongs$nickname[which(allsongs$ind_ID=="Ym.WG")] <- "Houdini"
 # For starters, PCA to see how the variation in songs falls out
 #### Song-level PCA ####
 colnames(allsongs)
-pca1 <- prcomp(allsongs[,4:15], 
+pca1 <- prcomp(allsongs[,c(4:9,11:15)], 
                center = T,
                scale. = T)
 
@@ -33,11 +35,8 @@ pca1 <- prcomp(allsongs[,4:15],
 
 pca1$rotation
 pca1scores <- as.data.frame(pca1$x)
-
-# remove signal pause ratio; probably too noisy of a measurement, sadly
-pca1 <- prcomp(allsongs[,c(4:9,11:15)], 
-               center = T,
-               scale. = T)
+# eigenvalues
+pca1$sdev^2
 
 # make a plot
 library(devtools)
@@ -73,7 +72,7 @@ ggbiplot(pca1,
          varname.adjust = 1)
 
 #### Life is short; lets's make a note-level plot!! ####
-allnotes <- read.csv("HZCH_note-level-measurements_2.csv")
+allnotes <- read.csv("HZCH_note-level-measurements_3.csv")
 for (i in 1:length(allnotes$file_name)) {
   allnotes$ind_ID[i] <- unlist(strsplit(allnotes$file_name[i],
                                         split = "_"))[2]
@@ -137,9 +136,9 @@ ggbiplot(pca2,
 
 
 
-# looking at the measurements for songs with PC2 scores > 4; all seem ok (mainly truncated Sparrowfoot classic) except one which I removed upstream
+# looking at the measurements for songs with PC2 scores > 4; all seem ok (mainly truncated Sparrowfoot classic) except ones which I removed upstream
 which(pca1scores$PC2 > 4)
-allsongs[which(pca1scores$PC2 > 4),]
+allsongs$file_name[which(pca1scores$PC2 > 4)]
 
 # with PC2 and PC3. Duration loads heavily onto PC3
 ggbiplot(pca2,
@@ -169,46 +168,113 @@ paran(allsongs[,c(4:9,11:15)],
 
 # looks to me like PC1 explains the classic BCCH-CACH song split: note-level duration measurements load positively. Overall song duration and note number, plus basically all the measurements implicating higher overall frequency and dominant frequency slope, load positively.
     # If this were a PCA of BCCH and CACH songs, min_freq would probably load   positively along with the rest of the frequency measurements...but as we've   noticed, the Sparrowfoot Classic is usually sung with BCCH-like low notes.
-# PC2 is trickier to interpret, but it might be where the heat is for me. Minimum frequency, dominant frequency slope, and between-note slope variation load positively, while song duration, note number, and between-note duration variation load negatively. It seems like PC2 separates traditionally CACH songs (+) from more Sparrowfoot classic-y songs (-) on the left, and on the right, BCCH-like songs whose amplitude-modulated terminal notes got separated by timer() (-) and those that did not (+). Notice in the middle of these two clusters, there are some songs by Mr. O and Nick which are probably BCCH-like songs with extra notes rather than a classic BCCH song with a split note.
+# PC2 is trickier to interpret, but it might be where the heat is for me. Minimum frequency, dominant frequency slope, and between-note slope variation load positively, while song duration, note number, and between-note duration variation load negatively. It seems like PC2 separates traditionally CACH songs (+) from more Sparrowfoot classic-y songs (-) on the left, and on the right, BCCH-like songs whose amplitude-modulated terminal notes got separated by timer() (-) and those that did not (+). Notice in the middle of these two clusters, there are some songs by Mr. O and Nick which are probably BCCH-like songs with extra notes rather than a classic BCCH song with a split note
+
+# library(geometry)
+# # area of convex hull of points for one individual...
+# pca1scores_Eliud <- pca1scores[which(allsongs$nickname=="Eliud"),1:2]
+# # points on the border of the convex hull
+# chull(pca1scores_Eliud)
+# # [1]  46  85   3 117  48  40  42 103 101
+# pca1scores_Eliud[chull(pca1scores_Eliud),]
+# 
+# area_ind <- function(z) { 
+#   xy <- z[chull(z), ]; polyarea(xy[,1], xy[,2]) }
+# area_ind(pca1scores_Eliud)
+# # [1] 8.363258
+# 
+# # return areas of convex hulls of all individual groups
+# CHareas <- data.frame(names = unique(allsongs$nickname),
+#                     area = rep(NA))
+# for (i in 1:length(unique(allsongs$nickname))) {
+#   CHareas$area[i] <- area_ind(pca1scores[which(allsongs$nickname==unique(allsongs$nickname)[i]),1:2])
+# }
+# CHareas
+# 
+# install.packages("/Users/shelbypalmer/Documents/GitHub/Chickadee-Song-Analyses/spatstat.core_2.4-4.tar", repos=NULL, type="source")
+# remotes::install_github("maRce10/PhenotypeSpace")
+# library(PhenotypeSpace)
+# remotes::install_github("maRce10/warbleR")
+
+# mess around with the PhenotypeSpace functions
+data(example_space)
+View(example_space)
+
+song_pca_scores <- cbind(pca1scores, allsongs$ind_ID)
+colnames(song_pca_scores)[12] <- "ind_ID"
+
+space_size(song_pca_scores,
+           dimensions = c("PC1", "PC2"),
+           group = "ind_ID",
+           type = "mst")
+
+# rarefying to 100 samples iteratively (x30)
+rarefact_space_size(song_pca_scores,
+                    dimensions = c("PC1", "PC2"),
+                    group = "ind_ID",
+                    iterations = 30,
+                    type = "mst")
+
+# testmatrix <- as.matrix(song_pca_scores$PC1[which(song_pca_scores$ind_ID=="Om.NO")],
+#                         song_pca_scores$PC2[which(song_pca_scores$ind_ID=="Om.NO")])
+# library(vegan)
+# dissim1 <- vegdist(x = testmatrix,
+#                    method = "euclidean")
+# testtree <- spantree(dissim1)
+# plot(testtree,
+#      col = "red")
+
+
+ggbiplot(pca1, 
+         groups = allsongs$nickname,
+         obs.scale = 1,
+         var.scale = 1,
+         alpha = 0.5,
+         varname.size = 3,
+         varname.adjust = 1)
+
+# try mst-knn with one individual
+testdist <- song_pca_scores[which(song_pca_scores$ind_ID=="Rm.RR"),1:2]
+testmatrix <- dist(testdist,
+                   diag = T,
+                   upper = T)
+testmatrix <- as.matrix(testmatrix)
+library(mstknnclust)
+testMST <- mst.knn(testmatrix) 
+
+igraph::V(testMST$network)$label.cex <- seq(0.6,0.6,length.out=vcount(testMST$network))
+
+plot(testMST$network, 
+     vertex.size=8, 
+     vertex.color=igraph::clusters(testMST$network)$membership, 
+     layout=igraph::layout.fruchterman.reingold(testMST$network, 
+                                                niter=10000),
+     main=paste("MST-kNN (Rm.RR) \n Clustering solution \n Number of clusters=", 
+                testMST$cnumber,sep="" ))
+
+# with all
+testmatrix2 <- as.matrix(dist(song_pca_scores[1:2],
+                              diag = T,
+                              upper = T))
+realtest <- mst.knn(testmatrix2)
+
+igraph::V(realtest$network)$label.cex <- seq(0.6,0.6,length.out=vcount(realtest$network))
+plot(realtest$network, 
+     vertex.size=3, 
+     vertex.color=igraph::clusters(realtest$network)$membership, 
+     layout=igraph::layout.kamada.kawai(realtest$network),
+     main=paste("MST-kNN (HZCH) \n Clustering solution \n Number of clusters=", 
+                realtest$cnumber,sep="" ))
 
 #
 #
 #
-#### Workflow going forward ####
-# Chop the songs from Doc Holliday that I got on my last day out recording (After quality checks, Doc Holliday is currently at 99 songs, so I will have to use these after all)
-# Take note-level measurements of the newly-chopped songs and check the raw measurements alongside spectrograms (should be doable since it's not very many songs)
-# Add note-level measurements to HZCH, re-order, and re-export csv
-# Add the new file names to HZCH_QC_Y, re-order, and re-export csv
-# When all note-level measurements look ok, take song-level measurements
-# Add song-level measurements to HZsongs, re-order, and re-export
-
-#
-#
-#
-#### Once all song measurements are finalized ####
-# From each individual, sample 100 songs without replacement and create a new dataframe with these measurements
-# Re-run PCA on these measurements
-# Since PhenotypeSpace won't load, figure out a way to quantify the total area occupied by each individual as a proxy for repertoire size
-# What is the best clustering method to use? How will points be grouped?
-
-library(geometry)
-# area of convex hull of points for one individual...
-pca1scores_Eliud <- pca1scores[which(allsongs$nickname=="Eliud"),1:2]
-# points on the border of the convex hull
-chull(pca1scores_Eliud)
-# [1]  46  85   3 117  48  40  42 103 101
-pca1scores_Eliud[chull(pca1scores_Eliud),]
-
-area_ind <- function(z) { 
-  xy <- z[chull(z), ]; polyarea(xy[,1], xy[,2]) }
-area_ind(pca1scores_Eliud)
-# [1] 8.363258
-
-# return areas of convex hulls of all individual groups
-CHareas <- data.frame(names = unique(allsongs$nickname),
-                    area = rep(NA))
-for (i in 1:length(unique(allsongs$nickname))) {
-  CHareas$area[i] <- area_ind(pca1scores[which(allsongs$nickname==unique(allsongs$nickname)[i]),1:2])
-}
-CHareas
-
+# 24 May 2023
+# running the mst space size estimation again, but including outlier points...does not change the numbers at all.
+MST_dists_1 <- rarefact_space_size(song_pca_scores,
+                    dimensions = c("PC1", "PC2"),
+                    group = "ind_ID",
+                    iterations = 30,
+                    outliers = 0,
+                    type = "mst")
+write.csv(MST_dists_1, "MST_dists_1.csv")

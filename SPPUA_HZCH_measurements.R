@@ -507,3 +507,105 @@ for (i in 1:length(unique(HZCH$file_name))) {
 setwd("C:/Users/Shelby Palmer/Desktop/The House Always Wins/Chickadee-Song-Analyses")
 write.csv(HZsongs, "HZCH_song-level-measurements_1.csv")
 
+
+#### Adding some late-addition songs to the dataset ####
+library(tuneR)
+library(seewave)
+setwd("/Users/shelbypalmer/Documents/GitHub/Chickadee-Song-Analyses/LateAdditionSongs")
+
+lapply(list.files(pattern = ".wav"), cutspec)
+
+song <- readWave(list.files()[1])
+notes <- timer(song,
+               dmin=0.04, 
+               envt="hil", 
+               msmooth=c(512, 90), 
+               threshold=8,
+               plot = F)
+late <- data.frame(note_num=seq(1:length(notes$s.start)), 
+                   file_name=rep(list.files()[1]))
+late$max_freq <- MaxDFreq2(song,notes)
+late$min_freq <- MinDFreq3(song,notes)
+late$mean_freq <- MeanDFreq2(song,notes)
+late$median_freq <- MedianDFreq2(song,notes)
+late$sd_freq <- StdevDFreq2(song,notes)
+late$abs_max_slope <- AbsDFreqMaxSlope2(song,notes)
+late$duration <- notes$s
+
+for (i in 2:length(list.files())) {
+  song <- readWave(list.files()[i])
+  song <- fir(song,
+              from = 2500,
+              to = 10000,
+              bandpass = T,
+              output = "Wave")
+  notes <- timer(song,
+                 dmin=0.04, 
+                 envt="hil", 
+                 msmooth=c(512, 90), 
+                 threshold=8,
+                 plot = F)
+  meas <- data.frame(note_num=seq(1:length(notes$s.start)), 
+                     file_name=rep(list.files()[i]))
+  for (j in 1:length(notes$s.start)) {
+    meas$max_freq[j] <- MaxDFreq2(song,notes)[j]
+    meas$min_freq[j] <- MinDFreq2(song,notes)[j]
+    meas$mean_freq[j] <- MeanDFreq2(song,notes)[j]
+    meas$median_freq[j] <- MedianDFreq2(song,notes)[j]
+    meas$sd_freq[j] <- StdevDFreq2(song,notes)[j]
+    meas$abs_max_slope[j] <- AbsDFreqMaxSlope2(song,notes)[j]
+    meas$duration[j] <- notes$s[j]
+  }
+  late <- rbind(late, meas)
+}
+View(late)
+
+# will only use the first 3 recordings, the others won't work with the params
+late <- late[1:12,]
+# add to existing note-level dataframe
+setwd("/Users/shelbypalmer/Documents/GitHub/Chickadee-Song-Analyses")
+HZCH <- read.csv("HZCH_note-level-measurements_2.csv")
+HZCH <- HZCH[,2:length(colnames(HZCH))]
+HZCH <- rbind(HZCH, late)
+HZCH <- HZCH[order(HZCH$file_name),]
+
+# Song-level 
+setwd("/Users/shelbypalmer/Documents/GitHub/Chickadee-Song-Analyses/LateAdditionSongs")
+latesongs <- data.frame(file_name = unique(late$file_name))
+for (i in 1:length(unique(late$file_name))) {
+  song <- readWave(unique(late$file_name)[i])
+  song <- fir(song,
+              from = 2500,
+              to = 10000,
+              bandpass = T,
+              output = "Wave")
+  dur <- timer(song,
+               dmin=0.04, 
+               envt="hil", 
+               msmooth=c(512, 90), 
+               threshold=8,
+               plot = F)
+  latesongs$ind_ID[i] <- unlist(strsplit(latesongs$file_name[i], split = "_"))[2]
+  latesongs$number_notes[i] <- length(which(late$file_name==latesongs$file_name[i]))
+  latesongs$duration[i] <- dur$s.end[length(dur$s.end)]-dur$s.start[1]
+  latesongs$max_note_dur[i] <- max(late$duration[which(late$file_name==latesongs$file_name[i])])
+  latesongs$min_note_dur[i] <- min(late$duration[which(late$file_name==latesongs$file_name[i])])
+  latesongs$mean_note_dur[i] <- mean(late$duration[which(late$file_name==latesongs$file_name[i])])
+  latesongs$stdev_note_dur[i] <- sd(late$duration[which(late$file_name==latesongs$file_name[i])])
+  latesongs$signal_pause_ratio[i] <- dur$r
+  latesongs$max_freq[i] <- max(late$max_freq[which(late$file_name==latesongs$file_name[i])])
+  latesongs$min_freq[i] <- min(late$min_freq[which(late$file_name==latesongs$file_name[i])])
+  latesongs$stdev_note_max_freq[i] <- sd(late$max_freq[which(late$file_name==latesongs$file_name[i])])
+  latesongs$abs_max_slope[i] <- max(late$abs_max_slope[which(late$file_name==latesongs$file_name[i])])
+  latesongs$stdev_slope[i] <- sd(late$abs_max_slope[which(late$file_name==latesongs$file_name[i])])
+}
+View(latesongs)
+
+setwd("/Users/shelbypalmer/Documents/GitHub/Chickadee-Song-Analyses")
+HZsongs <- read.csv("HZCH_song-level-measurements_1.csv")
+HZsongs <- HZsongs[,2:length(colnames(HZsongs))]
+HZsongs <- rbind(HZsongs, latesongs)
+HZsongs <- HZsongs[order(HZsongs$file_name),]
+
+write.csv(HZCH, "HZCH_note-level-measurements_3.csv")
+write.csv(HZsongs, "HZCH_song-level-measurements_2.csv")
