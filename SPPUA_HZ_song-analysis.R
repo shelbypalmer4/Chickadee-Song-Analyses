@@ -275,6 +275,71 @@ MST_dists_1 <- rarefact_space_size(song_pca_scores,
                     dimensions = c("PC1", "PC2"),
                     group = "ind_ID",
                     iterations = 30,
-                    outliers = 0,
                     type = "mst")
 write.csv(MST_dists_1, "MST_dists_1.csv")
+
+# checking other methods of space size estimation: kernel density (KD) and minimum convex polygon (MCP)
+KD_dists_1 <- rarefact_space_size(song_pca_scores,
+                                   dimensions = c("PC1", "PC2"),
+                                   group = "ind_ID",
+                                   iterations = 30,
+                                   type = "density")
+write.csv(KD_dists_1, "KD_dists_1.csv")
+
+MCP_dists_1 <- rarefact_space_size(song_pca_scores,
+                                  dimensions = c("PC1", "PC2"),
+                                  group = "ind_ID",
+                                  iterations = 30,
+                                  type = "mcp")
+
+# are the estimations consistent across methods?
+plot(MST_dists_1$mean.size, 
+     MCP_dists_1$mean.size)
+
+plot(KD_dists_1$mean.size, 
+     MCP_dists_1$mean.size)
+
+plot(MST_dists_1$mean.size, 
+     KD_dists_1$mean.size)
+# No.
+# What could be going on?
+
+# fuck it
+# plot all the birds separately
+for (i in 1:length(unique(allsongs$ind_ID))) {
+  a<-ggbiplot(pca1, 
+           groups = allsongs$nickname,
+           obs.scale = 1,
+           var.scale = 1,
+           alpha = ifelse(allsongs$ind_ID==unique(allsongs$ind_ID)[i], 1, 0),
+           varname.size = 3,
+           varname.adjust = 1)
+  print(a)
+}
+
+# checking the kernel density images
+library(adehabitatHR)
+KD_test <- SpatialPointsDataFrame(coords = song_pca_scores[,1:2],
+                         data = song_pca_scores)
+head(as.data.frame(KD_test))
+kern <- kernelUD(KD_test[,12])
+image(kern)
+# it appears that KD underestimates space sizes for individuals with variable, but less-clustered songs
+# considering that MCP inflates space sizes of individuals with variable but highly-clustered songs, it seems like MST is the way to go.
+
+setwd("/Users/shelbypalmer/Documents/GitHub/Chickadee-Genetic-Analyses")
+list.files()
+genotypes <- read.csv("STRUCTURE_data_with_localities.csv")
+singer_data <- genotypes[which(genotypes$ind_ID %in% c("HZ3", "HZ16", "HZ20", "HZ22", "HZ24", "HZ25", "HZ27", "HZ28", "HZ30", "HZ36")),]
+MST_dists_1 <- cbind(MST_dists_1,
+                    ind_ID = c("HZ24", "HZ28", "HZ22", "HZ36", "HZ16", "HZ25", "HZ3", "HZ30", "HZ20", "HZ27"))
+# dataframe with song and genotype data
+alldata <- merge(singer_data, MST_dists_1, by = "ind_ID")
+View(alldata)
+setwd("/Users/shelbypalmer/Documents/GitHub/Chickadee-Song-Analyses")
+write.csv(alldata, "All_Data_1.csv")
+
+plot(alldata$mean.size, alldata$prob_CA)
+
+firstgo <- lm(prob_CA~mean.size+latitude, data = alldata)
+summary(firstgo)
