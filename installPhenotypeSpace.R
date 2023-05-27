@@ -1,5 +1,7 @@
 install.packages("C:/Users/Shelby Palmer/Desktop/CHICKADEES/spatstat.core_2.4-4.tar", repos=NULL, type="source")
+library(spatstat.core)
 remotes::install_github("maRce10/PhenotypeSpace")
+library(PhenotypeSpace)
 
 # R version 4.3.0 (2023-04-21) -- "Already Tomorrow"
 # Copyright (C) 2023 The R Foundation for Statistical Computing
