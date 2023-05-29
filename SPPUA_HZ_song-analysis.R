@@ -327,19 +327,22 @@ image(kern)
 # it appears that KD underestimates space sizes for individuals with variable, but less-clustered songs
 # considering that MCP inflates space sizes of individuals with variable but highly-clustered songs, it seems like MST is the way to go.
 
-setwd("/Users/shelbypalmer/Documents/GitHub/Chickadee-Genetic-Analyses")
+# setwd("/Users/shelbypalmer/Documents/GitHub/Chickadee-Genetic-Analyses")
+setwd("C:/Users/Shelby Palmer/Desktop/CHICKADEES/Chickadee-Genetic-Analyses")
 list.files()
 genotypes <- read.csv("STRUCTURE_data_with_localities.csv")
+setwd("C:/Users/Shelby Palmer/Desktop/The House Always Wins/Chickadee-Song-Analyses")
+MST_dists_1 <- read.csv("MST_dists_1.csv")
 singer_data <- genotypes[which(genotypes$ind_ID %in% c("HZ3", "HZ16", "HZ20", "HZ22", "HZ24", "HZ25", "HZ27", "HZ28", "HZ30", "HZ36")),]
 MST_dists_1 <- cbind(MST_dists_1,
                     ind_ID = c("HZ24", "HZ28", "HZ22", "HZ36", "HZ16", "HZ25", "HZ3", "HZ30", "HZ20", "HZ27"))
 # dataframe with song and genotype data
 alldata <- merge(singer_data, MST_dists_1, by = "ind_ID")
 View(alldata)
-setwd("/Users/shelbypalmer/Documents/GitHub/Chickadee-Song-Analyses")
+# setwd("/Users/shelbypalmer/Documents/GitHub/Chickadee-Song-Analyses")
 write.csv(alldata, "All_Data_1.csv")
 
-plot(alldata$mean.size, alldata$prob_CA)
+# get recording dates for each individual
 
-firstgo <- lm(prob_CA~mean.size+latitude, data = alldata)
-summary(firstgo)
+
+
