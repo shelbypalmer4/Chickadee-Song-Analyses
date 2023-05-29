@@ -327,11 +327,12 @@ image(kern)
 # it appears that KD underestimates space sizes for individuals with variable, but less-clustered songs
 # considering that MCP inflates space sizes of individuals with variable but highly-clustered songs, it seems like MST is the way to go.
 
-# setwd("/Users/shelbypalmer/Documents/GitHub/Chickadee-Genetic-Analyses")
-setwd("C:/Users/Shelby Palmer/Desktop/CHICKADEES/Chickadee-Genetic-Analyses")
+setwd("/Users/shelbypalmer/Documents/GitHub/Chickadee-Genetic-Analyses")
+# setwd("C:/Users/Shelby Palmer/Desktop/CHICKADEES/Chickadee-Genetic-Analyses")
 list.files()
 genotypes <- read.csv("STRUCTURE_data_with_localities.csv")
-setwd("C:/Users/Shelby Palmer/Desktop/The House Always Wins/Chickadee-Song-Analyses")
+setwd("/Users/shelbypalmer/Documents/GitHub/Chickadee-Song-Analyses")
+# setwd("C:/Users/Shelby Palmer/Desktop/The House Always Wins/Chickadee-Song-Analyses")
 MST_dists_1 <- read.csv("MST_dists_1.csv")
 singer_data <- genotypes[which(genotypes$ind_ID %in% c("HZ3", "HZ16", "HZ20", "HZ22", "HZ24", "HZ25", "HZ27", "HZ28", "HZ30", "HZ36")),]
 MST_dists_1 <- cbind(MST_dists_1,
@@ -356,6 +357,26 @@ datesnames[i] <- length(unique(allsongs$date_recorded[which(allsongs$ind_ID==uni
 }
 
 datesnames <- as.data.frame(cbind(datesnames, unique(allsongs$ind_ID)))[,1:2]
-colnames(datesnames) <- c("number_days_recorded", "ind_ID")
-alldata <- merge(alldata, datesnames, by = "ind_ID")
+colnames(datesnames) <- c("number_days_recorded", "group")
+alldata <- merge(alldata, datesnames, by = "group")
+# need to clean up columns and column names
+colnames(alldata)
+alldata <- alldata[,-c(3,4,12)]
+colnames(alldata)[10] <- "number_songs_used"
+for (i in 11:14) {
+  colnames(alldata)[i] <- paste(colnames(alldata)[i], "songrep", sep = "_")
+}
+colnames(alldata)
 write.csv(alldata, "All_Data_1.csv")
+
+# log-transform the MST scores for equal variance between groups
+hist(log(alldata$mean.size_songrep[which(alldata$Sp_assigned=="CA")]))
+hist(log(alldata$mean.size_songrep[which(alldata$Sp_assigned=="HY")]))
+var(log(alldata$mean.size_songrep[which(alldata$Sp_assigned=="CA")])) # 0.05867663
+var(log(alldata$mean.size_songrep[which(alldata$Sp_assigned=="HY")])) # 0.05337334
+stripchart(alldata$mean.size_songrep~alldata$Sp_assigned)
+
+# two-sample t-test
+t_test_1 <- t.test(log(alldata$mean.size_songrep[which(alldata$Sp_assigned=="CA")]),
+                    log(alldata$mean.size_songrep[which(alldata$Sp_assigned=="HY")]), 
+                    var.equal=T)
