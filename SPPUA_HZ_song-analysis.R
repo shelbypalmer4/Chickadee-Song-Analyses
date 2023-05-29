@@ -343,6 +343,19 @@ View(alldata)
 write.csv(alldata, "All_Data_1.csv")
 
 # get recording dates for each individual
+# first, write a csv of the finalized song-level measurements...for version control purposes
+write.csv(allsongs, "SPPUA_song_level_measurements_final.csv")
 
+for (i in 1:length(allsongs$file_name)) {
+  allsongs$date_recorded[i] <- unlist(strsplit(allsongs$file_name[i], split = "_"))[3]
+}
 
+datesnames <- c(rep(NA, length(unique(allsongs$ind_ID))))
+for (i in 1:length(unique(allsongs$ind_ID))) {
+datesnames[i] <- length(unique(allsongs$date_recorded[which(allsongs$ind_ID==unique(allsongs$ind_ID)[i])]))
+}
 
+datesnames <- as.data.frame(cbind(datesnames, unique(allsongs$ind_ID)))[,1:2]
+colnames(datesnames) <- c("number_days_recorded", "ind_ID")
+alldata <- merge(alldata, datesnames, by = "ind_ID")
+write.csv(alldata, "All_Data_1.csv")
