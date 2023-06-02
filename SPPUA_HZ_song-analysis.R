@@ -27,7 +27,7 @@ allsongs$nickname[which(allsongs$ind_ID=="Ym.WG")] <- "Houdini"
 # For starters, PCA to see how the variation in songs falls out
 #### Song-level PCA ####
 colnames(allsongs)
-pca1 <- prcomp(allsongs[,c(4:9,11:15)], 
+pca1 <- prcomp(allsongs[,c(3:8,10:14)], 
                center = T,
                scale. = T)
 
@@ -369,14 +369,211 @@ for (i in 11:14) {
 colnames(alldata)
 write.csv(alldata, "All_Data_1.csv")
 
-# log-transform the MST scores for equal variance between groups
-hist(log(alldata$mean.size_songrep[which(alldata$Sp_assigned=="CA")]))
-hist(log(alldata$mean.size_songrep[which(alldata$Sp_assigned=="HY")]))
-var(log(alldata$mean.size_songrep[which(alldata$Sp_assigned=="CA")])) # 0.05867663
-var(log(alldata$mean.size_songrep[which(alldata$Sp_assigned=="HY")])) # 0.05337334
-stripchart(alldata$mean.size_songrep~alldata$Sp_assigned)
 
-# two-sample t-test
-t_test_1 <- t.test(log(alldata$mean.size_songrep[which(alldata$Sp_assigned=="CA")]),
-                    log(alldata$mean.size_songrep[which(alldata$Sp_assigned=="HY")]), 
-                    var.equal=T)
+
+#
+#
+#
+#
+#
+#
+#### Rarefaction Analysis & Viz ####
+alldata <- read.csv("All_Data_1.csv")
+allsongs <- read.csv("SPPUA_song_level_measurements_final.csv")
+allsongs <- allsongs[,3:length(colnames((allsongs)))]
+# try to plot a minimum spanning tree with simulated data
+simdata <- data.frame(x = c(0, 1.6, 3.4, -0.7, 2, -4, 0.3, 1.1, -3, 2.2),
+                      y = c(-1, 3, 2.5, 0.9, -2, 2, 0.1, 0, 1.5, -0.6))
+
+simdist <- (dist(simdata))
+
+library(vegan)
+simtree <- spantree(simdist)
+
+plot(simtree, 
+     ord = simdata,
+     pch = 19,
+     col = "red") # done
+
+# do it with real data
+# get one individual's PC scores 
+# sample to 100 and make a MST
+Eliud_pca_scores <- song_pca_scores[which(song_pca_scores$ind_ID=="Gm.GO"),]
+Eliud_rare <- Eliud_pca_scores[sample(1:nrow(Eliud_pca_scores), 100), ]
+Eliud_dist <- dist(Eliud_rare[,1:2])
+Eliud_tree <- spantree(Eliud_dist)
+dev.off()
+plot(Eliud_tree, 
+     ord = Eliud_rare[,1:2],
+     pch = 19,
+     col = "red")
+rm(Eliud_tree)
+
+# make a function that will create spantree objects and rarefied PC score dataframes using n songs for each individual 
+gettrees <- function(x, n) {
+              score <- song_pca_scores[which(song_pca_scores$ind_ID==x),]
+              rare <- score[sample(1:nrow(score), n), ]
+              distmat <- dist(rare[,1:2])
+              assign(paste(x, "tree", sep = "_"),
+                     spantree(distmat),
+                     envir = .GlobalEnv)
+              assign(paste(x, "PCscore", sep = "_"),
+                     rare,
+                     envir = .GlobalEnv)
+}
+lapply(unique(allsongs$ind_ID), n=100, gettrees)
+
+# pull them together into a list
+treelist <- mget(ls(pattern = "_tree" ))
+PCscorelist <- mget(ls(pattern = "_PCscore" ))
+
+# plot the first item 
+plot(treelist[[1]], 
+     ord = PCscorelist[[1]][,1:2],
+     pch = 19,
+     col = "red")
+
+#### Euclidean Minimum Spanning Tree with more than 2 principal components ####
+library(emstreeR)
+tryem <- ComputeMST(Eliud_rare[,1:3])
+plotMST3D(treelist3D[[4]],
+          pch = 19,
+          col.pts = rgb(0,0,0.5,0.5))
+# do it with all individuals
+get3Dtrees <- function(x, n) {
+  score <- song_pca_scores[which(song_pca_scores$ind_ID==x),]
+  rare <- score[sample(1:nrow(score), n), 1:3]
+  assign(paste(x, "3Dtree", sep = "_"),
+         ComputeMST(rare),
+         envir = .GlobalEnv)
+}
+lapply(unique(allsongs$ind_ID), n=100, get3Dtrees)
+treelist3D <- mget(ls(pattern = "_3Dtree" ))
+
+for (i in 1:length(treelist3D)) {
+  alldata$size_songrep_3D[i] <- sum(treelist3D[[i]][["distance"]])
+}
+
+# now do it with 4 PC's
+get4Dtrees <- function(x, n) {
+  score <- song_pca_scores[which(song_pca_scores$ind_ID==x),]
+  rare <- score[sample(1:nrow(score), n), 1:4]
+  assign(paste(x, "4Dtree", sep = "_"),
+         ComputeMST(rare),
+         envir = .GlobalEnv)
+}
+lapply(unique(allsongs$ind_ID), n=100, get4Dtrees)
+treelist4D <- mget(ls(pattern = "_4Dtree" ))
+
+for (i in 1:length(treelist4D)) {
+  alldata$size_songrep_4D[i] <- sum(treelist4D[[i]][["distance"]])
+}
+
+
+
+
+# dharma for checking model fitting
+# 
+#
+#
+#
+#
+# log-transform the MST scores for equal variance between groups
+# hist(log(alldata$mean.size_songrep[which(alldata$Sp_assigned=="CA")]))
+# hist(log(alldata$mean.size_songrep[which(alldata$Sp_assigned=="HY")]))
+# var(log(alldata$mean.size_songrep[which(alldata$Sp_assigned=="CA")])) # 0.05867663
+# var(log(alldata$mean.size_songrep[which(alldata$Sp_assigned=="HY")])) # 0.05337334
+# stripchart(alldata$mean.size_songrep~alldata$Sp_assigned)
+
+# # two-sample t-test
+# t_test_1 <- t.test(log(alldata$mean.size_songrep[which(alldata$Sp_assigned=="CA")]),
+#                    log(alldata$mean.size_songrep[which(alldata$Sp_assigned=="HY")]),
+#                    var.equal=T)
+# # p-value = 0.1752
+# # 95 percent confidence interval: -0.1225553  0.5678609
+plot(alldata$prob_CA, alldata$mean.size_songrep)
+plot(alldata$prob_CA, alldata$size_songrep_3D)
+plot(alldata$prob_CA, alldata$size_songrep_4D)
+plot(alldata$prob_CA, alldata$mean_PC1)
+
+for (i in 1:length(PCscorelist)) {
+  alldata$mean_PC1[i] <- mean(PCscorelist[[i]][["PC1"]])
+}
+for (i in 1:length(PCscorelist)) {
+  alldata$mean_PC2[i] <- mean(PCscorelist[[i]][["PC2"]])
+}
+for (i in 1:length(PCscorelist)) {
+  alldata$mean_PC3[i] <- mean(PCscorelist[[i]][["PC3"]])
+}
+for (i in 1:length(PCscorelist)) {
+  alldata$mean_PC4[i] <- mean(PCscorelist[[i]][["PC4"]])
+}
+
+library(dichromat)
+col.3D.tree <- colorRampPalette(c(rgb(0,0,1,1), rgb(0,0,1,0.3)), alpha = TRUE)
+plotMST3D(treelist3D[[1]],
+          pch = 19,
+          col.pts = col.3D.tree(100),
+          col.segts = col.3D.tree(100),
+          xlab = "PC1",
+          ylab = "PC2",
+          zlab = "PC3")
+
+# hacked scatterplot with axis ranges encompassing the whole acoustic space
+library(scatterplot3d)
+
+# as a loop: plot all images separately
+for (i in 1:length(treelist3D)) {
+  plotMSThack(treelist3D[[i]],
+              pch = 19,
+              xlab = "PC1",
+              ylab = "",
+              zlab = "PC3",
+              main = alldata$ind_ID[i],
+              xlim = c(-6,6.25),
+              ylim = c(-4.5,5.5),
+              zlim = c(-5,4.25),
+              col.segts = "black",
+              highlight.3d = T,
+              cex.symbols = 1.5,
+              cex.axis = 0.5)
+  dims <- par("usr")
+  par(mar=c(5,6,4,1))
+  x <- dims[1]+ 0.85*diff(dims[1:2])
+  y <- dims[3]+ 0.08*diff(dims[3:4])
+  text(x,y,"PC2",srt=30)
+}
+
+# graphical params to plot all images in 1 figure
+par(mfrow = c(5,2), oma = c(2,1.5,0,0))
+par(mar = c(3,3,1,1))
+
+# generate images
+for (i in 1:length(treelist3D)) {
+  plotMSThack(treelist3D[[i]],
+              pch = 19,
+              xlab = "",
+              ylab = "",
+              zlab = "",
+              main = alldata$ind_ID[i],
+              xlim = c(-6,6.25),
+              ylim = c(-4.5,5.5),
+              zlim = c(-5,4.25),
+              col.segts = "black",
+              highlight.3d = T,
+              cex.symbols = 1.5,
+              cex.axis = 0.5)
+  par(las = 0)
+  mtext(text = "PC3", 
+        side = 2, 
+        outer = TRUE, 
+        line = 0.3, 
+        padj = 1, 
+        cex = 0.75)
+  mtext(text = "PC1", 
+        side = 1, 
+        outer = TRUE, 
+        line = 0, 
+        padj = 1, 
+        cex = 0.75)
+}
