@@ -1,7 +1,10 @@
 #### Quantifying the variation in song of chickadees with mixed ancastry ####
 
-# setwd("C:/Users/Shelby Palmer/Desktop/The House Always Wins/Chickadee-Song-Analyses")
-setwd("/Users/shelbypalmer/Documents/GitHub/Chickadee-Song-Analyses")
+songWDlaptop <- "C:/Users/Shelby Palmer/Desktop/The House Always Wins/Chickadee-Song-Analyses"
+songWDmac <- "/Users/shelbypalmer/Documents/GitHub/Chickadee-Song-Analyses"
+
+setwd(songWDmac)
+setwd(songWDlaptop)
 allsongs <- read.csv("HZCH_song-level-measurements_2.csv")
 which(allsongs$number_notes>12)
 # let's go ahead and exclude the superlong songs from Mr. O
@@ -327,12 +330,13 @@ image(kern)
 # it appears that KD underestimates space sizes for individuals with variable, but less-clustered songs
 # considering that MCP inflates space sizes of individuals with variable but highly-clustered songs, it seems like MST is the way to go.
 
-setwd("/Users/shelbypalmer/Documents/GitHub/Chickadee-Genetic-Analyses")
-# setwd("C:/Users/Shelby Palmer/Desktop/CHICKADEES/Chickadee-Genetic-Analyses")
+setwd(genWDmac)
+setwd(genWDlaptop)
+
 list.files()
 genotypes <- read.csv("STRUCTURE_data_with_localities.csv")
-setwd("/Users/shelbypalmer/Documents/GitHub/Chickadee-Song-Analyses")
-# setwd("C:/Users/Shelby Palmer/Desktop/The House Always Wins/Chickadee-Song-Analyses")
+setwd(songWDmac)
+setwd(songWDlaptop)
 MST_dists_1 <- read.csv("MST_dists_1.csv")
 singer_data <- genotypes[which(genotypes$ind_ID %in% c("HZ3", "HZ16", "HZ20", "HZ22", "HZ24", "HZ25", "HZ27", "HZ28", "HZ30", "HZ36")),]
 MST_dists_1 <- cbind(MST_dists_1,
@@ -470,32 +474,7 @@ for (i in 1:length(treelist4D)) {
 }
 
 
-
-
-# dharma for checking model fitting
-# 
-#
-#
-#
-#
-# log-transform the MST scores for equal variance between groups
-# hist(log(alldata$mean.size_songrep[which(alldata$Sp_assigned=="CA")]))
-# hist(log(alldata$mean.size_songrep[which(alldata$Sp_assigned=="HY")]))
-# var(log(alldata$mean.size_songrep[which(alldata$Sp_assigned=="CA")])) # 0.05867663
-# var(log(alldata$mean.size_songrep[which(alldata$Sp_assigned=="HY")])) # 0.05337334
-# stripchart(alldata$mean.size_songrep~alldata$Sp_assigned)
-
-# # two-sample t-test
-# t_test_1 <- t.test(log(alldata$mean.size_songrep[which(alldata$Sp_assigned=="CA")]),
-#                    log(alldata$mean.size_songrep[which(alldata$Sp_assigned=="HY")]),
-#                    var.equal=T)
-# # p-value = 0.1752
-# # 95 percent confidence interval: -0.1225553  0.5678609
-plot(alldata$prob_CA, alldata$mean.size_songrep)
-plot(alldata$prob_CA, alldata$size_songrep_3D)
-plot(alldata$prob_CA, alldata$size_songrep_4D)
-plot(alldata$prob_CA, alldata$mean_PC1)
-
+# get mean PC scores 
 for (i in 1:length(PCscorelist)) {
   alldata$mean_PC1[i] <- mean(PCscorelist[[i]][["PC1"]])
 }
@@ -509,17 +488,20 @@ for (i in 1:length(PCscorelist)) {
   alldata$mean_PC4[i] <- mean(PCscorelist[[i]][["PC4"]])
 }
 
-library(dichromat)
-col.3D.tree <- colorRampPalette(c(rgb(0,0,1,1), rgb(0,0,1,0.3)), alpha = TRUE)
-plotMST3D(treelist3D[[1]],
-          pch = 19,
-          col.pts = col.3D.tree(100),
-          col.segts = col.3D.tree(100),
-          xlab = "PC1",
-          ylab = "PC2",
-          zlab = "PC3")
+# get mean branch lengths for 2D, 3D, and 4D MSTs
+for (i in 1:length(treelist)) {
+  alldata$mean_MST_branchlength_2D[i] <- mean(treelist[[i]]$dist)
+}
+for (i in 1:length(treelist3D)) {
+  alldata$mean_MST_branchlength_3D[i] <- mean(treelist3D[[i]]$distance)
+}
+for (i in 1:length(treelist4D)) {
+  alldata$mean_MST_branchlength_4D[i] <- mean(treelist4D[[i]]$distance)
+}
 
-# hacked scatterplot with axis ranges encompassing the whole acoustic space
+# hacked scatterplot with axis ranges encompassing the whole acoustic space - see file in repo "hack_scatterplot_plotMST3D.R"
+# scatter3Dhack()
+# plotMSThack
 library(scatterplot3d)
 
 # as a loop: plot all images separately
@@ -548,7 +530,7 @@ for (i in 1:length(treelist3D)) {
 par(mfrow = c(5,2), oma = c(2,1.5,0,0))
 par(mar = c(3,3,1,1))
 
-# generate images
+# generate figure
 for (i in 1:length(treelist3D)) {
   plotMSThack(treelist3D[[i]],
               pch = 19,
@@ -577,3 +559,60 @@ for (i in 1:length(treelist3D)) {
         padj = 1, 
         cex = 0.75)
 }
+# still need PC2 axis label and something to explain the color value change
+
+#
+#
+#
+#
+plot(alldata$prob_CA, alldata$mean.size_songrep)
+plot(alldata$prob_CA, alldata$size_songrep_3D)
+plot(alldata$prob_CA, alldata$size_songrep_4D)
+
+# get number of songs data
+for (i in 1:length(unique(allsongs$ind_ID))) {
+  alldata$number_songs_recorded[i] <- length(allsongs$ind_ID[which(allsongs$ind_ID==unique(allsongs$ind_ID)[i])])
+}
+
+#### linear regression ####
+# for every model, the model without the total song counts predictor explains more variation.
+
+# LM with MST PC1-2
+LM2D_Ancestry_Counts <- glm(mean.size_songrep ~ prob_CA + number_songs_recorded,
+              data = alldata)
+LM2D_Ancestry <- glm(mean.size_songrep ~ prob_CA,
+                           data = alldata)
+summary(LM2D_Ancestry_Counts)
+summary(LM2D_Ancestry)
+AIC(LM2D_Ancestry_Counts) # 71.70871
+AIC(LM2D_Ancestry) # 69.89889
+
+# LM with PC1-3
+LM3D_Ancestry_Counts <- lm(size_songrep_3D ~ prob_CA + number_songs_recorded,
+                           data = alldata)
+LM3D_Ancestry <- lm(size_songrep_3D ~ prob_CA,
+                    data = alldata)
+summary(LM3D_Ancestry_Counts)
+summary(LM3D_Ancestry)
+AIC(LM3D_Ancestry_Counts) # 84.53885
+AIC(LM3D_Ancestry) # 82.55541
+
+# # LM with PC1-4
+# LM4D_Ancestry_Counts <- lm(size_songrep_4D ~ prob_CA + number_songs_recorded,
+#                            data = alldata)
+# LM4D_Ancestry <- lm(size_songrep_4D ~ prob_CA,
+#                     data = alldata)
+# summary(LM4D_Ancestry_Counts)
+# summary(LM4D_Ancestry)
+# AIC(LM4D_Ancestry_Counts) # 89.89574
+# AIC(LM4D_Ancestry) # 87.89931
+
+# checking the redisuals
+plot(LM2D_Ancestry)
+plot(LM3D_Ancestry)
+
+
+
+
+hist(alldata$size_songrep_3D)
+
