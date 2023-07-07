@@ -1,0 +1,4 @@
+PC1,PC2,PC3,PC4,PC5
+Standard deviation,2.251,1.318,1.198,1.167,0.8354
+Proportion of Variance,0.4605,0.1579,0.1305,0.1237,0.06345
+Cumulative Proportion,0.4605,0.6184,0.7489,0.8726,0.9361

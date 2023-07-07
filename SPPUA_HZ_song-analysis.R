@@ -30,7 +30,7 @@ allsongs$nickname[which(allsongs$ind_ID=="Ym.WG")] <- "Houdini"
 # For starters, PCA to see how the variation in songs falls out
 #### Song-level PCA ####
 colnames(allsongs)
-pca1 <- prcomp(allsongs[,c(3:8,10:14)], 
+pca1 <- prcomp(allsongs[,c(4:9,11:15)], 
                center = T,
                scale. = T)
 
@@ -38,15 +38,16 @@ pca1 <- prcomp(allsongs[,c(3:8,10:14)],
 
 pca1$rotation
 pca1scores <- as.data.frame(pca1$x)
-# eigenvalues
-pca1$sdev^2
+# eigenvalues; PC1-4 have eigenvalues > 1
+pca1eig <- pca1$sdev^2
+
 
 # make a plot
 library(devtools)
 # install_github("vqv/ggbiplot")
 library(ggbiplot)
 ggbiplot(pca1, 
-         groups = allsongs$nickname,
+         groups = allsongs$ind_ID,
          obs.scale = 1,
          var.scale = 1,
          alpha = 0.5,
@@ -216,7 +217,10 @@ rarefact_space_size(song_pca_scores,
                     dimensions = c("PC1", "PC2"),
                     group = "ind_ID",
                     iterations = 30,
-                    type = "mst")
+                    type = "mst",
+                    outliers = 0.99)
+
+
 
 # testmatrix <- as.matrix(song_pca_scores$PC1[which(song_pca_scores$ind_ID=="Om.NO")],
 #                         song_pca_scores$PC2[which(song_pca_scores$ind_ID=="Om.NO")])
@@ -405,13 +409,16 @@ plot(simtree,
 Eliud_pca_scores <- song_pca_scores[which(song_pca_scores$ind_ID=="Gm.GO"),]
 Eliud_rare <- Eliud_pca_scores[sample(1:nrow(Eliud_pca_scores), 100), ]
 Eliud_dist <- dist(Eliud_rare[,1:2])
-Eliud_tree <- spantree(Eliud_dist)
+Eliud_tree <- spantree(Eliud_dist,
+                       toolong = 2.25)
 dev.off()
 plot(Eliud_tree, 
      ord = Eliud_rare[,1:2],
      pch = 19,
      col = "red")
 rm(Eliud_tree)
+
+
 
 # make a function that will create spantree objects and rarefied PC score dataframes using n songs for each individual 
 gettrees <- function(x, n) {
@@ -432,10 +439,47 @@ treelist <- mget(ls(pattern = "_tree" ))
 PCscorelist <- mget(ls(pattern = "_PCscore" ))
 
 # plot the first item 
-plot(treelist[[1]], 
-     ord = PCscorelist[[1]][,1:2],
+plot(treelist[[4]], 
+     ord = PCscorelist[[4]][,1:2],
      pch = 19,
-     col = "red")
+     col = hue_pal()(10)[4])
+
+# make a plot with all 10 figures
+# palette2 <- c("dodgerblue3", "indianred3", "green4", "turquoise3", "orangered3", "goldenrod3", "violetred3", "purple3", "darkblue", "darkred")
+
+
+# generate figure
+png(filename = "test.png", width = 1000, height = 1200)
+par(mfrow = c(4,3), oma = c(1.5,1.5,3,0))
+par(mar = c(5,5,2,1))
+for (i in 1:length(treelist)) {
+  plot(treelist[[i]], 
+       ord = PCscorelist[[i]][,1:2],
+       pch = 19,
+       cex = 2,
+       col = hue_pal()(10)[i],
+       xlab = "",
+       ylab = "",
+       main = alldata$ind_ID[i],
+       cex.main = 2,
+       cex.axis = 2,
+       xlim = c(-6,6),
+       ylim = c(-4.5,5.5),)
+  par(las = 0)
+  mtext(text = "PC2", 
+        side = 2, 
+        outer = T, 
+        line = 0.3, 
+        padj = 1, 
+        cex = 2)
+  mtext(text = "PC1", 
+        side = 1, 
+        outer = T, 
+        line = -1.8, 
+        padj = 1, 
+        cex = 2)
+}
+dev.off()
 
 #### Euclidean Minimum Spanning Tree with more than 2 principal components ####
 library(emstreeR)
@@ -489,15 +533,15 @@ for (i in 1:length(PCscorelist)) {
 }
 
 # get mean branch lengths for 2D, 3D, and 4D MSTs
-for (i in 1:length(treelist)) {
-  alldata$mean_MST_branchlength_2D[i] <- mean(treelist[[i]]$dist)
-}
-for (i in 1:length(treelist3D)) {
-  alldata$mean_MST_branchlength_3D[i] <- mean(treelist3D[[i]]$distance)
-}
-for (i in 1:length(treelist4D)) {
-  alldata$mean_MST_branchlength_4D[i] <- mean(treelist4D[[i]]$distance)
-}
+# for (i in 1:length(treelist)) {
+#   alldata$mean_MST_branchlength_2D[i] <- mean(treelist[[i]]$dist)
+# }
+# for (i in 1:length(treelist3D)) {
+#   alldata$mean_MST_branchlength_3D[i] <- mean(treelist3D[[i]]$distance)
+# }
+# for (i in 1:length(treelist4D)) {
+#   alldata$mean_MST_branchlength_4D[i] <- mean(treelist4D[[i]]$distance)
+# }
 
 # hacked scatterplot with axis ranges encompassing the whole acoustic space - see file in repo "hack_scatterplot_plotMST3D.R"
 # scatter3Dhack()
@@ -518,7 +562,8 @@ for (i in 1:length(treelist3D)) {
               col.segts = "black",
               highlight.3d = T,
               cex.symbols = 1.5,
-              cex.axis = 0.5)
+              cex.axis = 0.5,
+              angle = 50)
   dims <- par("usr")
   par(mar=c(5,6,4,1))
   x <- dims[1]+ 0.85*diff(dims[1:2])
@@ -527,10 +572,15 @@ for (i in 1:length(treelist3D)) {
 }
 
 # graphical params to plot all images in 1 figure
-par(mfrow = c(5,2), oma = c(2,1.5,0,0))
+par(mfrow = c(5,2), oma = c(2,1.5,0,2))
 par(mar = c(3,3,1,1))
 
 # generate figure
+png(filename = "MST_3D_ex_11jun23.png",
+    width = 3,
+    height = 8,
+    units = "in",
+    res = 1000)
 for (i in 1:length(treelist3D)) {
   plotMSThack(treelist3D[[i]],
               pch = 19,
@@ -538,9 +588,10 @@ for (i in 1:length(treelist3D)) {
               ylab = "",
               zlab = "",
               main = alldata$ind_ID[i],
-              xlim = c(-6,6.25),
+              xlim = c(-6,6),
               ylim = c(-4.5,5.5),
               zlim = c(-5,4.25),
+              angle = 60,
               col.segts = "black",
               highlight.3d = T,
               cex.symbols = 1.5,
@@ -558,29 +609,49 @@ for (i in 1:length(treelist3D)) {
         line = 0, 
         padj = 1, 
         cex = 0.75)
+  # mtext(text = "PC2", 
+  #       side = 4, 
+  #       outer = TRUE, 
+  #       line = -0.5, 
+  #       padj = 1, 
+  #       cex = 0.75)
+  text(par("usr")[2]-1, 
+       -2, 
+       srt=30, 
+       padj = 1, 
+       labels = "PC2",
+       cex = 1.1,
+       xpd = TRUE,
+       )
 }
-# still need PC2 axis label and something to explain the color value change
+dev.off()
+
+
 
 #
 #
 #
 #
-plot(alldata$prob_CA, alldata$mean.size_songrep)
-plot(alldata$prob_CA, alldata$size_songrep_3D)
-plot(alldata$prob_CA, alldata$size_songrep_4D)
 
-# get number of songs data
+# get number of songs data for linear models
 for (i in 1:length(unique(allsongs$ind_ID))) {
   alldata$number_songs_recorded[i] <- length(allsongs$ind_ID[which(allsongs$ind_ID==unique(allsongs$ind_ID)[i])])
 }
 
+#
+#
+#
+#
+#
+#
+#
 #### linear regression ####
 # for every model, the model without the total song counts predictor explains more variation.
 
 # LM with MST PC1-2
-LM2D_Ancestry_Counts <- glm(mean.size_songrep ~ prob_CA + number_songs_recorded,
+LM2D_Ancestry_Counts <- lm(mean.size_songrep ~ prob_CA + number_songs_recorded,
               data = alldata)
-LM2D_Ancestry <- glm(mean.size_songrep ~ prob_CA,
+LM2D_Ancestry <- lm(mean.size_songrep ~ prob_CA,
                            data = alldata)
 summary(LM2D_Ancestry_Counts)
 summary(LM2D_Ancestry)
@@ -597,22 +668,974 @@ summary(LM3D_Ancestry)
 AIC(LM3D_Ancestry_Counts) # 84.53885
 AIC(LM3D_Ancestry) # 82.55541
 
-# # LM with PC1-4
-# LM4D_Ancestry_Counts <- lm(size_songrep_4D ~ prob_CA + number_songs_recorded,
-#                            data = alldata)
-# LM4D_Ancestry <- lm(size_songrep_4D ~ prob_CA,
-#                     data = alldata)
-# summary(LM4D_Ancestry_Counts)
-# summary(LM4D_Ancestry)
-# AIC(LM4D_Ancestry_Counts) # 89.89574
-# AIC(LM4D_Ancestry) # 87.89931
+# add 2D MST with PC2-3
+MST_2and3 <- rarefact_space_size(song_pca_scores,
+                                 dimensions = c("PC2", "PC3"),
+                                 group = "ind_ID",
+                                 iterations = 30,
+                                 type = "mst")
+alldata$mean.size_songrep_PC2and3 <- MST_2and3$mean.size
+plot(alldata$prob_CA, alldata$mean.size_songrep_PC2and3)
+
+# LM with PC2-3
+LM23_Ancestry_Counts <- lm(mean.size_songrep_PC2and3 ~ prob_CA + number_songs_recorded,
+                           data = alldata)
+LM23_Ancestry <- lm(mean.size_songrep_PC2and3 ~ prob_CA,
+                    data = alldata)
+summary(LM23_Ancestry_Counts)
+summary(LM23_Ancestry)
+AIC(LM23_Ancestry_Counts) # 66.67866
+AIC(LM23_Ancestry) # 65.94836
 
 # checking the redisuals
 plot(LM2D_Ancestry)
 plot(LM3D_Ancestry)
+plot(LM23_Ancestry)
+# Q-Q residuals look ok, the rest ?????
+LM2D_Ancestry$residuals
+
+#
+#
+#
+#
+# make a new biplot with coordinated colors with the 2D MST plots
+setwd(songWDlaptop)
+png(filename = "PCA_allsongs_11jun2023.png",
+    width=6,
+    height=3.5,
+    units="in",
+    res=1200)
+ggplot() +
+  geom_point(data = song_pca_scores,
+             aes(x = PC1,
+                 y = PC2,
+                 color = ind_ID),
+             alpha = 0.55,
+             size = 1.5) +
+  guides(color = guide_legend(title = "Individual ID")) +
+  scale_color_discrete(labels=alldata$ind_ID) +
+  xlab(paste("PC1 - ", 
+             signif(summary(pca1)[[6]][2]*100, 3), 
+             "% var. explained")) +
+  ylab(paste("PC2 - ", 
+             signif(summary(pca1)[[6]][5]*100, 3), 
+             "% var. explained")) +
+  theme_bw()
+dev.off()
+
+#
+#
+#
+#
+#
+# 8 June 2023
+# generate figures for PC2-3 2D MSTs
+png(filename = "test2.png", width = 1000, height = 1200)
+par(mfrow = c(4,3), oma = c(1.5,1.5,3,0))
+par(mar = c(5,5,2,1))
+for (i in 1:length(treelist)) {
+  plot(treelist[[i]], 
+       ord = PCscorelist[[i]][,2:3],
+       pch = 19,
+       cex = 2,
+       col = hue_pal()(10)[i],
+       xlab = "",
+       ylab = "",
+       main = alldata$ind_ID[i],
+       cex.main = 2,
+       cex.axis = 2,
+       xlim = c(-6,6),
+       ylim = c(-4.5,5.5),)
+  par(las = 0)
+  mtext(text = "PC2", 
+        side = 2, 
+        outer = T, 
+        line = 0.3, 
+        padj = 1, 
+        cex = 2)
+  mtext(text = "PC1", 
+        side = 1, 
+        outer = T, 
+        line = -1.8, 
+        padj = 1, 
+        cex = 2)
+}
+dev.off()
+
+a <- getFitted(LM2D_Ancestry)
+b <- getObservedResponse(LM2D_Ancestry)
+c <- getResiduals(LM2D_Ancestry)
+d <- getSimulations(LM2D_Ancestry)
+hist(c)
+
+# 3D tree with PC 2-4
+get3Dtrees <- function(x, n) {
+  score <- song_pca_scores[which(song_pca_scores$ind_ID==x),]
+  rare <- score[sample(1:nrow(score), n), 2:4]
+  assign(paste(x, "3Dtree", sep = "_"),
+         ComputeMST(rare),
+         envir = .GlobalEnv)
+}
+lapply(unique(allsongs$ind_ID), n=100, get3Dtrees)
+treelist3D_2thru4 <- mget(ls(pattern = "_3Dtree" ))
+
+for (i in 1:length(treelist3D_2thru4)) {
+  alldata$size_songrep_3D_2thru4[i] <- sum(treelist3D_2thru4[[i]][["distance"]])
+}
+
+
+# LM with PC2-4
+LM24_Ancestry_Counts <- lm(size_songrep_3D_2thru4 ~ prob_CA + number_songs_recorded,
+                           data = alldata)
+LM24_Ancestry <- lm(size_songrep_3D_2thru4 ~ prob_CA,
+                    data = alldata)
+summary(LM24_Ancestry_Counts)
+summary(LM24_Ancestry)
+AIC(LM24_Ancestry_Counts) # 79.73526
+AIC(LM24_Ancestry) # 78.03071
+
+# 1D measurement: PC1 ranges for each individual
+for (i in 1:length(PCscorelist)) {
+  alldata$PC1_range[i] <- max(PCscorelist[[i]][1])-min(PCscorelist[[i]][1])
+}
+
+# plot best-fit linear models separately
+# PC 1-2
+# ggplot(alldata,
+#        aes(x = prob_CA, 
+#            y = mean.size_songrep,
+#            label = ind_ID)) +
+#   geom_smooth(method='lm',
+#               color = "black") +
+#   geom_point(size = 6,
+#              color = "dodgerblue",
+#              alpha = 0.7) +
+#   geom_text(nudge_y = -1.5) +
+#   labs(title = paste("R^2 = ",
+#                 round(summary(LM2D_Ancestry)$r.squared,
+#                       digits = 4), 
+#                 sep = "",
+#                 "   p = ",
+#                 round(summary(LM2D_Ancestry)$coef[2,4],
+#                       digits = 2),
+#                 "   Slope = ",
+#                 round(LM2D_Ancestry$coef[[2]],
+#                       digits = 2))) +
+#   xlab("Probability of assignment to CACH") +
+#   ylab("MST edge sum: PC1, PC2") +
+#   theme_bw() +
+#   theme(plot.title = element_text(face = "italic"))
+# 
+# # PC 2-3
+# ggplot(alldata,
+#        aes(x = prob_CA, 
+#            y = mean.size_songrep_PC2and3,
+#            label = ind_ID)) +
+#   geom_smooth(method='lm',
+#               color = "black") +
+#   geom_point(size = 6,
+#              color = "dodgerblue",
+#              alpha = 0.7) +
+#   geom_text(nudge_y = -1.5) +
+#   labs(title = paste("R^2 = ",
+#                 round(summary(LM23_Ancestry)$r.squared,
+#                       digits = 4), 
+#                 sep = "",
+#                 "   p = ",
+#                 round(summary(LM23_Ancestry)$coef[2,4],
+#                       digits = 2),
+#                 "   Slope = ",
+#                 round(LM23_Ancestry$coef[[2]],
+#                       digits = 2))) +
+#   xlab("Probability of assignment to CACH") +
+#   ylab("MST edge sum: PC2, PC3") +
+#   theme_bw() +
+#   theme(plot.title = element_text(face = "italic"))
+# 
+# # PC 1-3
+# ggplot(alldata,
+#        aes(x = prob_CA, 
+#            y = size_songrep_3D,
+#            label = ind_ID)) +
+#   geom_smooth(method='lm',
+#               color = "black") +
+#   geom_point(size = 6,
+#              color = "dodgerblue",
+#              alpha = 0.7) +
+#   geom_text(nudge_y = -1.5) +
+#   labs(title = paste("R^2 = ",
+#                 round(summary(LM3D_Ancestry)$r.squared,
+#                       digits = 4), 
+#                 sep = "",
+#                 "   p = ",
+#                 round(summary(LM3D_Ancestry)$coef[2,4],
+#                       digits = 4),
+#                 "   Slope = ",
+#                 round(LM3D_Ancestry$coef[[2]],
+#                       digits = 2))) +
+#   xlab("Probability of assignment to CACH") +
+#   ylab("MST edge sum: PC1, PC2, PC3") +
+#   theme_bw() +
+#   theme(plot.title = element_text(face = "italic"))
+# 
+# # PC 2-4
+# ggplot(alldata,
+#        aes(x = prob_CA, 
+#            y = size_songrep_3D_2thru4,
+#            label = ind_ID)) +
+#   geom_smooth(method='lm',
+#               color = "black") +
+#   geom_point(size = 6,
+#              color = "dodgerblue",
+#              alpha = 0.7) +
+#   geom_text(nudge_y = -1.5) +
+#   labs(title = paste("R^2 = ",
+#                 round(summary(LM24_Ancestry)$r.squared,
+#                       digits = 4), 
+#                 sep = "",
+#                 "   p = ",
+#                 round(summary(LM24_Ancestry)$coef[2,4],
+#                       digits = 2),
+#                 "   Slope = ",
+#                 round(LM24_Ancestry$coef[[2]],
+#                       digits = 2))) +
+#   xlab("Probability of assignment to CACH") +
+#   ylab("MST edge sum: PC2, PC3, PC4") +
+#   theme_bw() +
+#   theme(plot.title = element_text(face = "italic"))
+# 
+# # now make them into 1 figure
+# # PC 1-2
+# A <- ggplot(alldata,
+#        aes(x = prob_CA, 
+#            y = mean.size_songrep,
+#            label = ind_ID)) +
+#   geom_smooth(method='lm',
+#               color = "black") +
+#   geom_point(size = 4,
+#              color = "dodgerblue",
+#              alpha = 0.7) +
+#   geom_text(nudge_y = -1.5) +
+#   labs(title = paste("R^2 = ",
+#                      round(summary(LM2D_Ancestry)$r.squared,
+#                            digits = 4), 
+#                      sep = "",
+#                      "   Slope = "
+#                      ,round(LM2D_Ancestry$coef[[2]],
+#                            digits = 2)
+#                      )) +
+#   xlab("") +
+#   ylab("PC1, PC2") +
+#   theme_bw() +
+#   theme(plot.title = element_text(face = "bold.italic"))
+# # PC 2-3
+# C <- ggplot(alldata,
+#        aes(x = prob_CA, 
+#            y = mean.size_songrep_PC2and3,
+#            label = ind_ID)) +
+#   geom_smooth(method='lm',
+#               color = "black") +
+#   geom_point(size = 4,
+#              color = "dodgerblue",
+#              alpha = 0.7) +
+#   geom_text(nudge_y = -1.5) +
+#   labs(title = paste("R^2 = ",
+#                      round(summary(LM23_Ancestry)$r.squared,
+#                            digits = 4), 
+#                      sep = "",
+#                      "   Slope = "
+#                      ,round(LM23_Ancestry$coef[[2]],
+#                            digits = 2)
+#                      )) +
+#   xlab("") +
+#   ylab("PC2, PC3") +
+#   theme_bw() +
+#   theme(plot.title = element_text(face = "bold.italic"))
+# # PC 1-3
+# B <- ggplot(alldata,
+#        aes(x = prob_CA, 
+#            y = size_songrep_3D,
+#            label = ind_ID)) +
+#   geom_smooth(method='lm',
+#               color = "black") +
+#   geom_point(size = 4,
+#              color = "dodgerblue",
+#              alpha = 0.7) +
+#   geom_text(nudge_y = -1.5) +
+#   labs(title = paste("R^2 = ",
+#                      round(summary(LM3D_Ancestry)$r.squared,
+#                            digits = 4), 
+#                      sep = "",
+#                      "   Slope = ",
+#                      round(LM3D_Ancestry$coef[[2]],
+#                            digits = 2)
+#                      )) +
+#   xlab("") +
+#   ylab("PC1, PC2, PC3") +
+#   theme_bw() +
+#   theme(plot.title = element_text(face = "bold.italic"))
+# # PC 2-4
+# D <- ggplot(alldata,
+#        aes(x = prob_CA, 
+#            y = size_songrep_3D_2thru4,
+#            label = ind_ID)) +
+#   geom_smooth(method='lm',
+#               color = "black") +
+#   geom_point(size = 4,
+#              color = "dodgerblue",
+#              alpha = 0.7) +
+#   geom_text(nudge_y = -1.5) +
+#   labs(title = paste("R^2 = ",
+#                      round(summary(LM24_Ancestry)$r.squared,
+#                            digits = 4), 
+#                      sep = "",
+#                      "   Slope = ",round(LM24_Ancestry$coef[[2]],
+#                            digits = 2)
+#                      )) +
+#   xlab("") +
+#   ylab("PC2, PC3, PC4") +
+#   theme_bw() +
+#   theme(plot.title = element_text(face = "bold.italic"))
+# 
+# AllLM <- ggarrange(A, B, C, D,
+#                    ncol = 2, nrow = 2)
+# 
+# par(mar = c(3,5,1,1))
+# png(filename = "LM_figs_15june23.png",
+#     width = 12,
+#     height = 7,
+#     units = "in",
+#     res = 1000)
+# annotate_figure(AllLM, 
+#                 left = textGrob("Song Variety", 
+#                                 rot = 90, 
+#                                 vjust = 0.25, 
+#                                 gp = gpar(cex = 1.3)),
+#                 bottom = textGrob("Probability of Assignment to CACH", 
+#                                   gp = gpar(cex = 1.3),
+#                                   vjust = 0))
+# dev.off()
+
+# mean and stdev PC1 values for each individual
+mean(song_pca_scores$PC1[which(song_pca_scores$ind_ID[i])==T])
+
+for(i in 1:length(unique(song_pca_scores$ind_ID))) {
+  alldata$stdev_PC_1[i] <- sd(song_pca_scores$PC1[which(song_pca_scores$ind_ID==unique(song_pca_scores$ind_ID)[i])])
+}
+for(i in 1:length(unique(song_pca_scores$ind_ID))) {
+  alldata$mean_PC_1_all[i] <- mean(song_pca_scores$PC1[which(song_pca_scores$ind_ID==unique(song_pca_scores$ind_ID)[i])])
+}
+
+
+
+# scale the MST sums
+scaledvalues <- as.data.frame(scale(alldata[,c(11,20,21,23,24)],
+                              center = F))
+newcolnames <- c()
+for (i in 1:length(colnames(alldata[,c(11,20,21,23,24)]))) {
+  newcolnames[i] <- paste(colnames(alldata[,c(11,20,21,23,24)])[i],
+                          "scaled",
+                          sep = "_")
+}
+colnames(scaledvalues) <- newcolnames
+alldata <- cbind(alldata, scaledvalues)
+
+# scale and add the PC1 range value
+scaledPC1range <- as.data.frame(scale(alldata[,c(27:32)],
+                                      center = F))
+alldata <- cbind(alldata, scaledPC1range[,length(colnames(scaledPC1range))])
+colnames(alldata)[length(colnames(alldata))] <- "PC1_range_scaled"
+
+# new LMs with scaled variables to standardize the slopes
+# LM with PC1 range
+LMPC1scaled_Ancestry_Counts <- lm(PC1_range_scaled ~ prob_CA + number_songs_recorded,
+                                 data = alldata)
+LMPC1scaled_Ancestry <- lm(PC1_range_scaled ~ prob_CA,
+                          data = alldata)
+# this is a new model (not run unscaled) so need to run AIC again
+AIC(LMPC1scaled_Ancestry_Counts) # 9.809884
+AIC(LMPC1scaled_Ancestry) # 9.644903
+summary(LMPC1scaled_Ancestry)
+
+# LM with MST PC1-2
+LM12scaled_Ancestry_Counts <- lm(mean.size_songrep_scaled ~ prob_CA + number_songs_recorded,
+                           data = alldata)
+LM12scaled_Ancestry <- lm(mean.size_songrep_scaled ~ prob_CA,
+                    data = alldata)
+
+# LM with PC1-3
+LM13scaled_Ancestry_Counts <- lm(size_songrep_3D_scaled ~ prob_CA + number_songs_recorded,
+                           data = alldata)
+LM13scaled_Ancestry <- lm(size_songrep_3D_scaled ~ prob_CA,
+                    data = alldata)
+
+# LM with PC2-3
+LM23scaled_Ancestry_Counts <- lm(mean.size_songrep_PC2and3_scaled ~ prob_CA + number_songs_recorded,
+                           data = alldata)
+LM23scaled_Ancestry <- lm(mean.size_songrep_PC2and3_scaled ~ prob_CA,
+                    data = alldata)
+# LM with PC2-4
+LM24scaled_Ancestry_Counts <- lm(size_songrep_3D_2thru4_scaled ~ prob_CA + number_songs_recorded,
+                           data = alldata)
+LM24scaled_Ancestry <- lm(size_songrep_3D_2thru4_scaled ~ prob_CA,
+                    data = alldata)
+
+
+# new figures
+# PC 1-2
+A1 <- ggplot(alldata,
+            aes(x = prob_CA, 
+                y = mean.size_songrep_scaled,
+                label = ind_ID)) +
+  geom_smooth(method='lm',
+              color = "black") +
+  geom_point(size = 4,
+             color = "dodgerblue",
+             alpha = 0.7) +
+  geom_text(nudge_y = -0.03) +
+  labs(title = paste("R^2 = ",
+                     round(summary(LM12scaled_Ancestry)$r.squared,
+                           digits = 4), 
+                     sep = "",
+                     "   Slope = "
+                     ,signif(LM12scaled_Ancestry$coef[[2]],
+                            digits = 2)
+  )) +
+  xlab("") +
+  ylab("PC1, PC2") +
+  theme_bw() +
+  theme(plot.title = element_text(face = "bold.italic"))
+# PC 2-3
+C1 <- ggplot(alldata,
+            aes(x = prob_CA, 
+                y = mean.size_songrep_PC2and3_scaled,
+                label = ind_ID)) +
+  geom_smooth(method='lm',
+              color = "black") +
+  geom_point(size = 4,
+             color = "dodgerblue",
+             alpha = 0.7) +
+  geom_text(nudge_y = -0.03) +
+  labs(title = paste("R^2 = ",
+                     round(summary(LM23scaled_Ancestry)$r.squared,
+                           digits = 4), 
+                     sep = "",
+                     "   Slope = "
+                     ,signif(LM23scaled_Ancestry$coef[[2]],
+                            digits = 2)
+  )) +
+  xlab("") +
+  ylab("PC2, PC3") +
+  theme_bw() +
+  theme(plot.title = element_text(face = "bold.italic"))
+# PC 1-3
+B1 <- ggplot(alldata,
+            aes(x = prob_CA, 
+                y = size_songrep_3D_scaled,
+                label = ind_ID)) +
+  geom_smooth(method='lm',
+              color = "black") +
+  geom_point(size = 4,
+             color = "dodgerblue",
+             alpha = 0.7) +
+  geom_text(nudge_y = -0.03) +
+  labs(title = paste("R^2 = ",
+                     round(summary(LM13scaled_Ancestry)$r.squared,
+                           digits = 4), 
+                     sep = "",
+                     "   Slope = ",
+                     signif(LM13scaled_Ancestry$coef[[2]],
+                           digits = 2)
+  )) +
+  xlab("") +
+  ylab("PC1, PC2, PC3") +
+  theme_bw() +
+  theme(plot.title = element_text(face = "bold.italic"))
+# PC 2-4
+D1 <- ggplot(alldata,
+            aes(x = prob_CA, 
+                y = size_songrep_3D_2thru4_scaled,
+                label = ind_ID)) +
+  geom_smooth(method='lm',
+              color = "black") +
+  geom_point(size = 4,
+             color = "dodgerblue",
+             alpha = 0.7) +
+  geom_text(nudge_y = -0.03) +
+  labs(title = paste("R^2 = ",
+                     round(summary(LM24scaled_Ancestry)$r.squared,
+                           digits = 4), 
+                     sep = "",
+                     "   Slope = ",signif(LM24scaled_Ancestry$coef[[2]],
+                                         digits = 2)
+  )) +
+  xlab("") +
+  ylab("PC2, PC3, PC4") +
+  theme_bw() +
+  theme(plot.title = element_text(face = "bold.italic"))
+
+AllLM2 <- ggarrange(A1, B1, C1, D1,
+                   ncol = 2, nrow = 2)
+
+par(mar = c(3,5,1,1))
+png(filename = "LM_figs_15june23.png",
+    width = 12,
+    height = 7,
+    units = "in",
+    res = 1000)
+annotate_figure(AllLM2, 
+                left = textGrob("Song Variety (Scaled)", 
+                                rot = 90, 
+                                vjust = 0.25, 
+                                gp = gpar(cex = 1.3)),
+                bottom = textGrob("Probability of Assignment to CACH", 
+                                  gp = gpar(cex = 1.3),
+                                  vjust = 0))
+dev.off()
+
+# figure with PC1, PC1-2, and PC1-3
+# PC 1
+A2 <- ggplot(alldata,
+             aes(x = prob_CA, 
+                 y = PC1_range_scaled,
+                 label = ind_ID)) +
+  geom_smooth(method='lm',
+              color = "black") +
+  geom_point(size = 4,
+             color = "dodgerblue",
+             alpha = 0.7) +
+  geom_text(nudge_y = -0.03) +
+  labs(title = paste("R^2 = ",
+                     round(summary(LMPC1scaled_Ancestry)$r.squared,
+                           digits = 4), 
+                     sep = "",
+                     "   Slope = "
+                     ,signif(LMPC1scaled_Ancestry$coef[[2]],
+                             digits = 2)
+  )) +
+  xlab("") +
+  ylab("PC1") +
+  theme_bw() +
+  theme(plot.title = element_text(face = "bold.italic"))
+# PC 1-2
+B2 <- ggplot(alldata,
+             aes(x = prob_CA, 
+                 y = mean.size_songrep_scaled,
+                 label = ind_ID)) +
+  geom_smooth(method='lm',
+              color = "black") +
+  geom_point(size = 4,
+             color = "dodgerblue",
+             alpha = 0.7) +
+  geom_text(nudge_y = -0.03) +
+  labs(title = paste("R^2 = ",
+                     round(summary(LM12scaled_Ancestry)$r.squared,
+                           digits = 4), 
+                     sep = "",
+                     "   Slope = "
+                     ,signif(LM12scaled_Ancestry$coef[[2]],
+                             digits = 2)
+  )) +
+  xlab("") +
+  ylab("PC1, PC2") +
+  theme_bw() +
+  theme(plot.title = element_text(face = "bold.italic"))
+# PC 1-3
+C2 <- ggplot(alldata,
+             aes(x = prob_CA, 
+                 y = size_songrep_3D_scaled,
+                 label = ind_ID)) +
+  geom_smooth(method='lm',
+              color = "black") +
+  geom_point(size = 4,
+             color = "dodgerblue",
+             alpha = 0.7) +
+  geom_text(nudge_y = -0.03) +
+  labs(title = paste("R^2 = ",
+                     round(summary(LM13scaled_Ancestry)$r.squared,
+                           digits = 4), 
+                     sep = "",
+                     "   Slope = ",
+                     signif(LM13scaled_Ancestry$coef[[2]],
+                            digits = 2)
+  )) +
+  xlab("") +
+  ylab("PC1, PC2, PC3") +
+  theme_bw() +
+  theme(plot.title = element_text(face = "bold.italic"))
+
+AllLM3 <- ggarrange(A2, B2, C2,
+                    ncol = 2, nrow = 2)
+setwd(songWDlaptop)
+par(mar = c(3,5,1,1))
+png(filename = "LM_figs_21june23.png",
+    width = 12,
+    height = 7,
+    units = "in",
+    res = 1000)
+annotate_figure(AllLM3, 
+                left = textGrob("Song Variety (Scaled)", 
+                                rot = 90, 
+                                vjust = 0.25, 
+                                gp = gpar(cex = 1.3)),
+                bottom = textGrob("Probability of Assignment to CACH", 
+                                  gp = gpar(cex = 1.3),
+                                  vjust = 0))
+dev.off()
+
+AllLM4 <- ggarrange(A2, B2, C2,
+                    ncol = 1, nrow = 3)
+setwd(songWDlaptop)
+par(mar = c(3,5,1,1))
+png(filename = "LM_figs_21june23.png",
+    width = 6,
+    height = 12,
+    units = "in",
+    res = 1000)
+annotate_figure(AllLM4, 
+                left = textGrob("Song Variety (Scaled)", 
+                                rot = 90, 
+                                vjust = 0.25, 
+                                gp = gpar(cex = 1.3)),
+                bottom = textGrob("Probability of Assignment to CACH", 
+                                  gp = gpar(cex = 1.3),
+                                  vjust = 0))
+dev.off()
 
 
 
 
-hist(alldata$size_songrep_3D)
+# alternate models for phenotypic expression in genotypically admixed individuals
 
+
+
+
+
+
+
+
+
+
+
+# generate another figure of 2D MSTs for slides
+png(filename = "test4.png", width = 1200, height = 500)
+par(mfrow = c(2,5), oma = c(1.5,1.5,3,0))
+par(mar = c(4,4,2,1))
+for (i in 1:length(treelist)) {
+  plot(treelist[[i]], 
+       ord = PCscorelist[[i]][,1:2],
+       pch = 19,
+       cex = 1,
+       col = hue_pal()(10)[i],
+       xlab = "",
+       ylab = "",
+       main = alldata$ind_ID[i],
+       cex.main = 2,
+       cex.axis = 1,
+       xlim = c(-6,6),
+       ylim = c(-4.5,5.5),)
+  par(las = 0)
+  mtext(text = "PC2", 
+        side = 2,
+        line = -1.8,
+        outer = T, 
+        cex = 1)
+  mtext(text = "PC1", 
+        side = 1,
+        line = -1.8,
+        outer = T, 
+        cex = 1)
+}
+dev.off()
+
+# actually didn't need to do this :( oh well
+allsongs$ind_num <- rep(NA)
+for (i in 1:length(allsongs$ind_ID)) {
+  allsongs$ind_num[which(allsongs$ind_ID %in% alldata$group[i])] <- alldata$ind_ID[i]
+}
+
+# final FINAL biplot figure with arrows and proper legend
+png(filename = "final_FINAL_pca1fig.png",
+    width = 8,
+    height = 5,
+    units = "in",
+    res = 1000)
+ggbihack(pca1, 
+         groups = allsongs$ind_ID,
+         obs.scale = 1,
+         var.scale = 1,
+         alpha = 0.5,
+         varname.size = 3,
+         varname.adjust = 1) +
+  scale_color_discrete(name = "Ind. ID",
+                       labels = alldata$ind_ID)
+dev.off()
+
+#### write data tables for appendices ####
+# PC loadings of song measurements
+write.table(signif(pca1$rotation[,1:4], 
+                   digits = 4),
+            file = "pca1loadings.txt", 
+            sep = ",", 
+            quote = F)
+# checking stdev of MST sums
+colnames(alldata)
+write.table(cbind(alldata$ind_ID,
+                  signif(alldata[,c(11:14,22)],
+                         digits = 4)),
+            file = "MSTstdev_check.txt", 
+            sep = ",", 
+            quote = F,
+            row.names = F)
+write.table(signif(summary(pca1)[[6]][,1:5],
+                   digits = 4),
+            file = "pca1summary1thru5.txt", 
+            sep = ",", 
+            quote = F)
+write.table(signif(summary(pca1)[[6]][,6:11],
+                   digits = 4),
+            file = "pca1summary6thru11.txt", 
+            sep = ",", 
+            quote = F)
+# 1, 2, and 3 D space sizes for all individuals
+write.table(cbind(alldata$ind_ID,
+                  signif(alldata[,c(27,28,33)],
+                         digits = 4)),
+            file = "spacesizes.txt", 
+            sep = ",", 
+            quote = F,
+            row.names = F)
+mean(alldata$PC1_range_scaled)
+mean(alldata$mean.size_songrep_scaled)
+mean(alldata$size_songrep_3D_scaled)
+sd(alldata$PC1_range_scaled)
+sd(alldata$mean.size_songrep_scaled)
+sd(alldata$size_songrep_3D_scaled)
+
+# plot just 2 3D MSTs: figure for thesis
+par(mfrow = c(1,2), oma = c(2,1.5,0,2))
+par(mar = c(3,3,1,1))
+
+# generate figure
+png(filename = "MST_3D_18jun23.png",
+    width = 6,
+    height = 8,
+    units = "in",
+    res = 1000)
+plotMSThack(treelist3D$Gm.GO_3Dtree,
+              pch = 19,
+              xlab = "",
+              ylab = "",
+              zlab = "",
+              main = "HZ24",
+              xlim = c(-6,6),
+              ylim = c(-4.5,5.5),
+              zlim = c(-5,4.25),
+              angle = 60,
+              col.segts = "black",
+              highlight.3d = T,
+              cex.symbols = 1.5,
+              cex.axis = 0.5)
+plotMSThack(treelist3D$Om.NO_3Dtree,
+            pch = 19,
+            xlab = "",
+            ylab = "",
+            zlab = "",
+            main = "HZ16",
+            xlim = c(-6,6),
+            ylim = c(-4.5,5.5),
+            zlim = c(-5,4.25),
+            angle = 60,
+            col.segts = "black",
+            highlight.3d = T,
+            cex.symbols = 1.5,
+            cex.axis = 0.5)
+  par(las = 0)
+  mtext(text = "PC3", 
+        side = 2, 
+        outer = TRUE, 
+        line = 0.3, 
+        padj = 1, 
+        cex = 1)
+  mtext(text = "PC1", 
+        side = 1, 
+        outer = TRUE, 
+        line = 0, 
+        padj = 1, 
+        cex = 1)
+  text(par("usr")[2]-1, 
+       -2, 
+       srt=60, 
+       adj = 1.2, 
+       labels = "PC2",
+       cex = 1,
+       xpd = TRUE,
+  )
+
+dev.off()
+
+ggbihack(pca1, 
+         groups = allsongs$ind_ID,
+         obs.scale = 1,
+         var.scale = 1,
+         alpha = 0.5,
+         var.axes = F) +
+  guides(col = F) +
+  theme_classic2() +
+  panel_border(color = "black")
+
+ggbihack(pca1, 
+         groups = allsongs$ind_ID,
+         obs.scale = 1,
+         var.scale = 1,
+         alpha = ifelse(allsongs$ind_ID == "Rm.RR", 1, 0),
+         var.axes = F) + 
+  guides(col = F) +
+  theme_classic2() +
+  panel_border(color = "black")
+
+par(mar = c(4,3,1,1))
+plot(treelist[[7]], 
+     ord = PCscorelist[[7]][,1:2],
+     pch = 19,
+     cex = 0.5,
+     col = hue_pal()(10)[7],
+     xlim = c(-6,6),
+     ylim = c(-4.5,5.5),)
+
+# plot just 2 3D MSTs: figure for defense
+# generate figure
+png(filename = "MST_3D_26jun23.png",
+    width = 12,
+    height = 6,
+    units = "in",
+    res = 1000)
+par(mfrow = c(1,2), oma = c(2,1.5,0,2))
+par(mar = c(3,3,1,1))
+plotMSThack(treelist3D$Gm.GO_3Dtree,
+            pch = 16,
+            xlab = "",
+            ylab = "",
+            zlab = "",
+            main = "HZ24",
+            xlim = c(-6,6),
+            ylim = c(-4.5,5.5),
+            zlim = c(-5,4.25),
+            angle = 60,
+            col.segts = "red3",
+            highlight.3d = T,
+            cex.symbols = 1,
+            cex.axis = 1)
+plotMSThack(treelist3D$Om.NO_3Dtree,
+            pch = 16,
+            xlab = "",
+            ylab = "",
+            zlab = "",
+            main = "HZ16",
+            xlim = c(-6,6),
+            ylim = c(-4.5,5.5),
+            zlim = c(-5,4.25),
+            angle = 60,
+            col.segts = "red3",
+            highlight.3d = T,
+            cex.symbols = 1,
+            cex.axis = 1)
+par(las = 0)
+mtext(text = "PC3", 
+      side = 2, 
+      outer = TRUE, 
+      line = 0.3, 
+      padj = 1, 
+      cex = 1)
+mtext(text = "PC1", 
+      side = 1, 
+      outer = TRUE, 
+      line = 0, 
+      padj = 1, 
+      cex = 1)
+text(par("usr")[2]-1, 
+     -2, 
+     srt=60, 
+     adj = 1.2, 
+     labels = "PC2",
+     cex = 1,
+     xpd = TRUE,
+)
+
+dev.off()
+
+# LM figure for defense
+AllLM5 <- ggarrange(A2, B2, C2,
+                    ncol = 3, nrow = 1)
+setwd(songWDlaptop)
+png(filename = "LM_figs_26june23.png",
+    width = 12,
+    height = 4,
+    units = "in",
+    res = 1000)
+par(mar = c(6,5,6,1))
+annotate_figure(AllLM5, 
+                left = textGrob("Song Variety (Scaled)", 
+                                rot = 90, 
+                                vjust = 0.25, 
+                                gp = gpar(cex = 1.3)),
+                bottom = textGrob("Probability of Assignment to CACH", 
+                                  gp = gpar(cex = 1.3),
+                                  vjust = 0))
+dev.off()
+
+# PC1 song variety score plot
+pca1scores2 <- cbind(pca1scores, allsongs$ind_ID)
+ranges <- data.frame(ind_ID = alldata$ind_ID,
+                     maxPC1 = rep(NA),
+                     minPC1 = rep(NA))
+for (i in 1:length(ranges$ind_ID)) {
+  ranges$maxPC1[i] <- max(PCscorelist[[i]][1])
+  ranges$minPC1[i] <- min(PCscorelist[[i]][1])
+}
+setwd(songWDlaptop)
+png(filename = "PC1range.png",
+    width = 8,
+    height = 6,
+    units = "in",
+    res = 1000)
+ggplot(data = ranges,
+       aes(x = ind_ID)) +
+  geom_linerange(aes(ymin = minPC1, ymax = maxPC1, x = ind_ID),
+                 size = 1.5, alpha = 1, color = hue_pal()(10)) +
+  coord_flip() +
+  ylab("PC1") +
+  theme_classic() +
+  theme(axis.title.y = element_blank())
+dev.off()
+
+# 1-D figure only for thesis defense slides
+setwd(songWDlaptop)
+png(filename = "1Donly.png",
+    width = 6,
+    height = 5,
+    units = "in",
+    res = 1000)
+ggplot(alldata,
+       aes(x = prob_CA, 
+           y = PC1_range_scaled,
+           label = ind_ID)) +
+  geom_smooth(method='lm',
+              color = "black") +
+  geom_point(size = 4,
+             color = "dodgerblue",
+             alpha = 0.7) +
+  geom_text(nudge_y = -0.03) +
+  labs(title = paste("R^2 = ",
+                     round(summary(LMPC1scaled_Ancestry)$r.squared,
+                           digits = 4), 
+                     sep = "",
+                     "   Slope = "
+                     ,signif(LMPC1scaled_Ancestry$coef[[2]],
+                             digits = 2)
+  )) +
+  xlab("Probability of Assignment to PC1") +
+  ylab("Song Variety (Scaled): PC1") +
+  theme_bw() +
+  theme(plot.title = element_text(face = "bold.italic"))
+dev.off()
